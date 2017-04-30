@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Sockets;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,7 +10,9 @@ namespace FAPS
 {
     class ClientHandler
     {
+        public static int i = 0;
         Monitor monitor;
+        Socket socket;
 
         private Boolean authenticate(String login, String pass)
         {
@@ -36,14 +39,36 @@ namespace FAPS
                 return false;
         }
 
-        public ClientHandler(Monitor _monitor){
+        public ClientHandler(Monitor _monitor, Socket _socket)
+        {
+            socket = _socket;
             monitor = _monitor;
+        }
+
+        public void run()
+        {
             monitor.inc();
             monitor.print();
             if (authenticate("user1", "pass1"))
                 Console.WriteLine("elo");
             else
                 Console.WriteLine("nie elo");
+
+            String data = null;
+            byte[] bytes = new byte[1024];
+
+            while (true)
+            {
+                bytes = new byte[1024];
+                int bytesRec = socket.Receive(bytes);
+                data = Encoding.ASCII.GetString(bytes, 0, bytesRec);
+
+                Console.WriteLine("Text received : {0}", data);
+
+
+            }
+            socket.Shutdown(SocketShutdown.Both);
+            socket.Close();
         }
 
     }

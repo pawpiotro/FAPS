@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 using System.IO;
+using System.Threading;
 
 namespace FAPS
 {
@@ -36,16 +37,19 @@ namespace FAPS
 
             // Bind the socket to the local endpoint and   
             // listen for incoming connections.  
+            Socket handler = null;
+
             try
             {
                 listener.Bind(localEndPoint);
                 listener.Listen(10);
 
+                
                 // Start listening for connections.
                 while (true)
                 {
                     Console.WriteLine("Waiting for a connection...");
-                    Socket handler = listener.Accept();
+                    handler = listener.Accept();
                     data = null;
 
                     bytes = new byte[1024];
@@ -58,19 +62,22 @@ namespace FAPS
                     handler.Send(msg);
                     if (data.IndexOf("Herro") > -1)
                     {
-                        ClientHandler client = new ClientHandler(monitor);
+                        ClientHandler client = new ClientHandler(monitor, handler);
+                        Thread tmp = new Thread(client.run);
+                        tmp.Start();
                     }
                     else
                         Console.WriteLine("No threads for ya");
                     Console.WriteLine("Text received : {0}", data);
                     
-                    handler.Shutdown(SocketShutdown.Both);
-                    handler.Close();
                 }
 
             }
             catch (Exception e)
             {
+
+                handler.Shutdown(SocketShutdown.Both);
+                handler.Close();
                 Console.WriteLine(e.ToString());
             }
 
