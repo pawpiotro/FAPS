@@ -9,6 +9,8 @@ namespace FAPS
 {
     class ClientHandler
     {
+        Monitor monitor;
+
         private Boolean authenticate(String login, String pass)
         {
             var list = new List<Tuple<String, String>>();
@@ -34,7 +36,10 @@ namespace FAPS
                 return false;
         }
 
-        public ClientHandler(){
+        public ClientHandler(Monitor _monitor){
+            monitor = _monitor;
+            monitor.inc();
+            monitor.print();
             if (authenticate("user1", "pass1"))
                 Console.WriteLine("elo");
             else

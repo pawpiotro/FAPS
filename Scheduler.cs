@@ -8,5 +8,11 @@ namespace FAPS
 {
     class Scheduler
     {
+        Monitor monitor;
+        public Scheduler(Monitor _monitor)
+        {
+            monitor = _monitor;
+            monitor.print();
+        }
     }
 }

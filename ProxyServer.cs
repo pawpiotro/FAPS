@@ -11,7 +11,8 @@ namespace FAPS
 {
     class ProxyServer
     {
-        private Scheduler scheduler = new Scheduler();
+        private static Scheduler scheduler;
+        private static Monitor monitor;
         // Incoming data from the client.  
         public static string data = null;
 
@@ -57,7 +58,7 @@ namespace FAPS
                     handler.Send(msg);
                     if (data.IndexOf("Herro") > -1)
                     {
-                        ClientHandler client = new ClientHandler();
+                        ClientHandler client = new ClientHandler(monitor);
                     }
                     else
                         Console.WriteLine("No threads for ya");
@@ -82,6 +83,8 @@ namespace FAPS
 
         public static int Main(String[] args)
         {
+            monitor = new Monitor();
+            scheduler = new Scheduler(monitor);
             StartListening();
             Console.WriteLine("\nPress ENTER to exit...");
             Console.Read();
