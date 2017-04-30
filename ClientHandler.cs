@@ -57,13 +57,19 @@ namespace FAPS
             String data = null;
             byte[] bytes = new byte[1024];
 
+            socket.ReceiveTimeout = 500;
+
             while (true)
             {
                 bytes = new byte[1024];
-                int bytesRec = socket.Receive(bytes);
-                data = Encoding.ASCII.GetString(bytes, 0, bytesRec);
-
-                Console.WriteLine("Text received : {0}", data);
+                try {
+                    int bytesRec = socket.Receive(bytes);
+                    data = Encoding.ASCII.GetString(bytes, 0, bytesRec);
+                    Console.WriteLine("Text received : {0}", data);
+                } catch(SocketException e)
+                {
+                    Console.WriteLine("timeout");
+                }
 
 
             }
