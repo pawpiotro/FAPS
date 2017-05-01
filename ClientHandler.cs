@@ -13,6 +13,7 @@ namespace FAPS
         public static int i = 0;
         Monitor monitor;
         Socket socket;
+        Boolean readyToSend = false;
 
         private Boolean authenticate(String login, String pass)
         {
@@ -47,32 +48,48 @@ namespace FAPS
 
         public void run()
         {
+            byte[] sdata = new byte[1024];
+            socket.Send(sdata);
             monitor.inc();
             monitor.print();
-            if (authenticate("user1", "pass1"))
-                Console.WriteLine("elo");
-            else
-                Console.WriteLine("nie elo");
 
             String data = null;
             byte[] bytes = new byte[1024];
 
             socket.ReceiveTimeout = 500;
-
-            while (true)
+            
+            byte[] msg = { 8 };
+            socket.Send(msg);
+            Console.WriteLine("logging in...");
+            int bytesRec = socket.Receive(bytes);
+            data = Encoding.ASCII.GetString(bytes, 0, bytesRec);
+            // jak login bedzie wygladal i haslo?
+            // data split
+            if (authenticate("user1", "pass1"))
             {
-                bytes = new byte[1024];
-                try {
-                    int bytesRec = socket.Receive(bytes);
-                    data = Encoding.ASCII.GetString(bytes, 0, bytesRec);
-                    Console.WriteLine("Text received : {0}", data);
-                } catch(SocketException e)
+                Console.WriteLine("Succes");
+                while (true)
                 {
-                    Console.WriteLine("timeout");
+                    try
+                    {
+                        bytesRec = socket.Receive(bytes);
+                        data = Encoding.ASCII.GetString(bytes, 0, bytesRec);
+                        Console.WriteLine("Text received : {0}", data);
+                    }
+                    catch (SocketException e)
+                    {
+                        Console.WriteLine("timeout");
+                        if (readyToSend)
+                        {
+                            Console.WriteLine("wysylam");
+                        }
+                    }
                 }
-
-
+            } else
+            {
+                Console.WriteLine("Failed");
             }
+            
             socket.Shutdown(SocketShutdown.Both);
             socket.Close();
         }
