@@ -13,5 +13,29 @@ namespace FAPS
         public void inc() { i++; }
 
         public void print() { Console.WriteLine(i); }
+
+        // Is there file waiting to download/upload/command?
+        public bool dlReady()
+        {
+            return false;
+        }
+        public bool ulReady()
+        {
+            return false;
+        }
+        public bool cmdReady()
+        {
+            return false;
+        }
+
+        // Get file/command waiting
+        // public file dlFetch() { }
+        // public file ulFetch() { }
+        // public cmd cmdFetch() { }
+
+        public int dlSize()     // Return size of file to download
+        {
+            return 0;
+        }
     }
 }
