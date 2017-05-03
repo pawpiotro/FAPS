@@ -14,13 +14,11 @@ namespace FAPS
     {
         private static Scheduler scheduler;
         private static Monitor monitor;
-        // Incoming data from the client.  
-        public static string data = null;
 
         public static void StartListening()
         {
             // Data buffer for incoming data.  
-            byte[] bytes = new Byte[1024];
+            Command cmd = new Command();
 
             /*IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
             for(int i = 0; i < ipHostInfo.AddressList.Length; i++)
@@ -50,25 +48,26 @@ namespace FAPS
                 {
                     Console.WriteLine("Waiting for a connection...");
                     handler = listener.Accept();
-                    data = null;
 
-                    bytes = new byte[1024];
-                    int bytesRec = handler.Receive(bytes);
-                    data += Encoding.ASCII.GetString(bytes, 0, bytesRec);
-
-                    // Echo the data back to the client.  
-                    byte[] msg = Encoding.ASCII.GetBytes(data);
-
-                    handler.Send(msg);
-                    if (data.IndexOf("Herro") > -1)
+                    // Client send INTRODUCE
+                    handler.Receive(cmd.Code);
+                    Console.WriteLine("ncode " + cmd.nCode);
+                    if (cmd.nCode.Equals(1))
                     {
-                        ClientHandler client = new ClientHandler(monitor, handler);
-                        Thread tmp = new Thread(client.run);
-                        tmp.Start();
+                        //Cliend send secret phrase
+                        handler.Receive(cmd.Size);
+                        Console.WriteLine("nsize " + cmd.nSize);
+                        cmd.setDataSize(cmd.Size);
+                        handler.Receive(cmd.Data);
+                        if (cmd.sData.Equals("zyrafywchodzadoszafy")){
+                            Console.WriteLine("elo");
+                            ClientHandler client = new ClientHandler(monitor, handler);
+                            Thread tmp = new Thread(client.run);
+                            tmp.Start();
+                        }
                     }
                     else
-                        Console.WriteLine("No threads for ya");
-                    Console.WriteLine("Text received : {0}", data);
+                        Console.WriteLine("Connection rejected");
                     
                 }
 
@@ -80,14 +79,9 @@ namespace FAPS
                 handler.Close();
                 Console.WriteLine(e.ToString());
             }
-
-            Console.WriteLine("\nPress ENTER to continue...");
-            Console.Read();
-
+            
         }
-
-
-
+        
         public static int Main(String[] args)
         {
             monitor = new Monitor();

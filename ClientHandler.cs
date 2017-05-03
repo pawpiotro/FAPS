@@ -13,7 +13,7 @@ namespace FAPS
         public static int i = 0;
         Monitor monitor;
         Socket socket;
-        Boolean readyToSend = false;
+        Boolean readyToSend = true;
 
         private Boolean authenticate(String login, String pass)
         {
@@ -29,11 +29,6 @@ namespace FAPS
                     list.Add(Tuple.Create<String, String>(result[0], result[1]));
                 }
             }
-            /*
-            for(int i = 0; i < list.Count(); i++)
-            {
-                Console.WriteLine("Login: {0} Pass XD: {1}", list[i].Item1, list[i].Item2);
-            }*/
             if (list.Contains(Tuple.Create<String, String>(login, pass)))
                 return true;
             else
@@ -48,48 +43,59 @@ namespace FAPS
 
         public void run()
         {
-            byte[] sdata = new byte[1024];
-            socket.Send(sdata);
+
             monitor.inc();
             monitor.print();
 
-            String data = null;
-            byte[] bytes = new byte[1024];
-
             socket.ReceiveTimeout = 500;
+
+            Command cmd = new Command();
+            cmd.nCode = 8;
             
-            byte[] msg = { 8 };
-            socket.Send(msg);
-            Console.WriteLine("logging in...");
-            int bytesRec = socket.Receive(bytes);
-            data = Encoding.ASCII.GetString(bytes, 0, bytesRec);
-            // jak login bedzie wygladal i haslo?
-            // data split
-            if (authenticate("user1", "pass1"))
+            socket.Send(cmd.Code);
+            socket.Receive(cmd.Code);
+            Console.WriteLine(cmd.Code);
+            Console.WriteLine(cmd.nCode);
+            if (cmd.nCode.Equals(2))
             {
-                Console.WriteLine("Succes");
-                while (true)
+                Console.WriteLine("logging in...");
+                socket.Receive(cmd.Size);
+                Console.WriteLine(cmd.nSize);
+                cmd.setDataSize(cmd.Size);
+                socket.Receive(cmd.Data);
+                Console.WriteLine(cmd.Data);
+                Console.WriteLine(cmd.sData);
+                String tmp = cmd.sData;
+                char[] separators = { ':' };
+                String[] tmp2 = tmp.Split(separators);
+                Console.WriteLine("Login: {0} Pass XD: {1}", tmp2[0], tmp2[1]);
+                if (authenticate(tmp2[0], tmp2[1]))
                 {
-                    try
+                    Console.WriteLine("Success");
+                    Console.WriteLine("Waiting for commands...");
+                    while (true)
                     {
-                        bytesRec = socket.Receive(bytes);
-                        data = Encoding.ASCII.GetString(bytes, 0, bytesRec);
-                        Console.WriteLine("Text received : {0}", data);
-                    }
-                    catch (SocketException e)
-                    {
-                        Console.WriteLine("timeout");
-                        if (readyToSend)
+                        try
                         {
-                            Console.WriteLine("wysylam");
+                            socket.Receive(cmd.Code);
+                            Console.WriteLine("Text received : {0}", cmd.nCode);
+                        }
+                        catch (SocketException e)
+                        {
+                            Console.WriteLine("timeout");
+                            if (readyToSend)
+                            {
+                                Console.WriteLine("wysylam");
+                            }
                         }
                     }
                 }
-            } else
-            {
-                Console.WriteLine("Failed");
+                else
+                {
+                    Console.WriteLine("Failed");
+                }
             }
-            
+            else Console.WriteLine("NIEE");
             socket.Shutdown(SocketShutdown.Both);
             socket.Close();
         }

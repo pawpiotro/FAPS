@@ -12,7 +12,7 @@ namespace FAPS
 
         public void inc() { i++; }
 
-        public void print() { Console.WriteLine(i); }
+        public void print() { Console.WriteLine("monitor:" + i); }
 
         // Is there file waiting to download/upload/command?
         public bool dlReady()
