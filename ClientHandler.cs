@@ -41,6 +41,39 @@ namespace FAPS
             monitor = _monitor;
         }
 
+        private bool login()
+        {
+            Command cmd = new Command();
+            // send ACCEPT to client
+            cmd.nCode = 8;
+            socket.Send(cmd.Code);
+            // receive command. expecting LOGIN
+            socket.Receive(cmd.Code);
+            if (cmd.nCode.Equals(2))
+            {
+                Console.WriteLine("logging in...");
+                // receive size of login and password
+                socket.Receive(cmd.Size);
+                Console.WriteLine(cmd.nSize);
+                cmd.setDataSize(cmd.Size);
+                socket.Receive(cmd.Data);
+                char[] separators = { ':' };
+                String[] tmp = cmd.sData.Split(separators);
+                Console.WriteLine("Login: {0} Pass: {1}", tmp[0], tmp[1]);
+                if (authenticate(tmp[0], tmp[1]))
+                    return true;
+                else
+                {
+                    Console.WriteLine("Invalid login or password");
+                    return false;
+                }
+            } else
+            {
+                Console.WriteLine("Unexpected command received.");
+                return false;
+            }
+        }
+
         public void run()
         {
 
@@ -49,53 +82,34 @@ namespace FAPS
 
             socket.ReceiveTimeout = 500;
 
-            Command cmd = new Command();
-            cmd.nCode = 8;
-            
-            socket.Send(cmd.Code);
-            socket.Receive(cmd.Code);
-            Console.WriteLine(cmd.Code);
-            Console.WriteLine(cmd.nCode);
-            if (cmd.nCode.Equals(2))
-            {
-                Console.WriteLine("logging in...");
-                socket.Receive(cmd.Size);
-                Console.WriteLine(cmd.nSize);
-                cmd.setDataSize(cmd.Size);
-                socket.Receive(cmd.Data);
-                Console.WriteLine(cmd.Data);
-                Console.WriteLine(cmd.sData);
-                String tmp = cmd.sData;
-                char[] separators = { ':' };
-                String[] tmp2 = tmp.Split(separators);
-                Console.WriteLine("Login: {0} Pass XD: {1}", tmp2[0], tmp2[1]);
-                if (authenticate(tmp2[0], tmp2[1]))
+            if (login())
+            { 
+                Console.WriteLine("Success!");
+                Console.WriteLine("Waiting for commands...");
+
+                Command cmd = new Command();
+                /*while (true)
                 {
-                    Console.WriteLine("Success");
-                    Console.WriteLine("Waiting for commands...");
-                    while (true)
+                    try
                     {
-                        try
+                        socket.Receive(cmd.Code);
+                        Console.WriteLine("Text received : {0}", cmd.nCode);
+                    }
+                    catch (SocketException e)
+                    {
+                        Console.WriteLine("timeout");
+                        if (readyToSend)
                         {
-                            socket.Receive(cmd.Code);
-                            Console.WriteLine("Text received : {0}", cmd.nCode);
-                        }
-                        catch (SocketException e)
-                        {
-                            Console.WriteLine("timeout");
-                            if (readyToSend)
-                            {
-                                Console.WriteLine("wysylam");
-                            }
+                            Console.WriteLine("wysylam");
                         }
                     }
-                }
-                else
-                {
-                    Console.WriteLine("Failed");
-                }
+                }*/
             }
-            else Console.WriteLine("NIEE");
+            else
+            {
+                Console.WriteLine("Login failed");
+            }
+
             socket.Shutdown(SocketShutdown.Both);
             socket.Close();
         }
