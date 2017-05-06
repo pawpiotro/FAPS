@@ -80,24 +80,23 @@ namespace FAPS
             monitor.inc();
             monitor.print();
 
-            socket.ReceiveTimeout = 500;
+            socket.ReceiveTimeout = 10;
 
             if (login())
             { 
                 Console.WriteLine("Success!");
                 Console.WriteLine("Waiting for commands...");
 
-                Command cmd;
+                Command cmd = new Command();
                 while (true)
                 {
                     try
                     {
-                        cmd = new Command();
                         socket.Receive(cmd.Code);
+                        Console.WriteLine("elo " + cmd.nCode);
                         if (cmd.nCode.Equals(255))  //exit
                         {
-                            // signal stuff
-                            // eot
+                            break;
                         }
                         if (cmd.interpret())        // check if command contains data
                         {
@@ -112,7 +111,7 @@ namespace FAPS
                                 break;
                             case 7:     // upload
                                 monitor.queueUpload(cmd);
-                                break;  
+                                break;
                             default:    // other
                                 monitor.queueMisc(cmd);
                                 break;
@@ -127,13 +126,18 @@ namespace FAPS
                             Console.WriteLine("wysylam");
                         }
                     }
+                    finally
+                    {
+                        cmd = new Command();
+                        //System.Threading.Thread.Sleep(1000);
+                    }
                 }
             }
             else
             {
                 Console.WriteLine("Login failed");
             }
-
+            Console.WriteLine("CH exit");
             socket.Shutdown(SocketShutdown.Both);
             socket.Close();
         }

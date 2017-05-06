@@ -8,6 +8,7 @@ namespace FAPS
 {
     class Monitor
     {
+        private object syncObject = new object();
 
         private List<Command> uploadQueue = new List<Command>();
         private List<Command> downloadQueue = new List<Command>();
@@ -15,37 +16,67 @@ namespace FAPS
 
         int i = 0;
 
-        public void inc() { i++; }
+        public void inc()
+        {
+            lock (syncObject)
+            {
+                i++;
+            }
+        }
 
-        public void print() { Console.WriteLine("monitor:" + i); }
+        public void print()
+        {
+            lock (syncObject)
+            {
+                i++; Console.WriteLine("monitor:" + i);
+            }
+        }
 
         public void queueMisc(Command cmd)
         {
-            miscQueue.Add(cmd);
+            lock (syncObject)
+            {
+                miscQueue.Add(cmd);
+            }
         }
 
         public void queueUpload(Command cmd)
         {
+            lock (syncObject)
+            { 
             uploadQueue.Add(cmd);
+            }
         }
 
         public void queueDownload(Command cmd)
         {
-            downloadQueue.Add(cmd);
+            lock (syncObject)
+            {
+                downloadQueue.Add(cmd);
+            }
         }
 
         // Is there file waiting to download/upload/command?
         public bool dlReady()
         {
-            return false;
+            lock (syncObject)
+            {
+                return false;
+            }
         }
         public bool ulReady()
         {
-            return false;
+            lock (syncObject)
+            {
+                return false;
+            }
         }
         public bool cmdReady()
         {
-            return false;
+            lock (syncObject)
+            {
+                return false;
+            }
         }
 
         // Get file/command waiting
@@ -55,7 +86,10 @@ namespace FAPS
 
         public int dlSize()     // Return size of file to download
         {
-            return 0;
+            lock (syncObject)
+            {
+                return 0;
+            }
         }
     }
 }

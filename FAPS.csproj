@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="ClientHandler.cs" />
     <Compile Include="Command.cs" />
+    <Compile Include="Listener.cs" />
     <Compile Include="Monitor.cs" />
     <Compile Include="ProxyServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -14,81 +14,63 @@ namespace FAPS
     {
         private static Scheduler scheduler;
         private static Monitor monitor;
+        private static Listener listener;
 
-        public static void StartListening()
+        private static void changePort() { }
+        private static void doSmth() { }
+        private static void doSmthElse() { }
+        
+        private static void menu()
         {
-            // Data buffer for incoming data.  
-            Command cmd = new Command();
-
-            /*IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            for(int i = 0; i < ipHostInfo.AddressList.Length; i++)
+            String input;
+            int num;
+            while(true)
             {
-                Console.WriteLine(ipHostInfo.AddressList[i] + "\n");
-            }
-            IPAddress ipAddress = ipHostInfo.AddressList[0];*/
-
-            IPAddress ipAddress = IPAddress.Parse("192.168.0.16");
-            IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
-
-            Socket listener = new Socket(AddressFamily.InterNetwork,
-                SocketType.Stream, ProtocolType.Tcp);
-
-            // Bind the socket to the local endpoint and   
-            // listen for incoming connections.  
-            Socket handler = null;
-
-            try
-            {
-                listener.Bind(localEndPoint);
-                listener.Listen(10);
-
+                Console.Clear();
+                listener.printConnected();
+                Console.WriteLine("===============");
+                Console.Write(
+                    "1. Change port\n2. Do smth\n3. Do smth else\n0. Exit\n");
+                Thread.Sleep(1000);
+                input =  Console.ReadLine();
+                Console.WriteLine(input);
                 
-                // Start listening for connections.
-                while (true)
+                if (Int32.TryParse(input, out num))          // check if input is number;
                 {
-                    Console.WriteLine("Waiting for a connection...");
-                    handler = listener.Accept();
-
-                    // Client send INTRODUCE
-                    handler.Receive(cmd.Code);
-                    Console.WriteLine("ncode " + cmd.nCode);
-                    if (cmd.nCode.Equals(1))
+                    if (num.Equals(0))
+                        break;
+                    switch (num)
                     {
-                        //Cliend send secret phrase
-                        handler.Receive(cmd.Size);
-                        Console.WriteLine("nsize " + cmd.nSize);
-                        cmd.setDataSize(cmd.Size);
-                        handler.Receive(cmd.Data);
-                        if (cmd.sData.Equals("zyrafywchodzadoszafy")){
-                            Console.WriteLine("elo");
-                            ClientHandler client = new ClientHandler(monitor, handler);
-                            Thread tmp = new Thread(client.run);
-                            tmp.Start();
-                        }
+                        case 1:
+                            changePort();
+                            break;
+                        case 2:
+                            doSmth();
+                            break;
+                        case 3:
+                            doSmthElse();
+                            break;
+                        default:
+                            Console.WriteLine("Invalid input");
+                            break;
                     }
-                    else
-                        Console.WriteLine("Connection rejected");
-                    
+                } else
+                {
+                    Console.WriteLine("Invalid input");
                 }
-
             }
-            catch (Exception e)
-            {
-
-                handler.Shutdown(SocketShutdown.Both);
-                handler.Close();
-                Console.WriteLine(e.ToString());
-            }
-            
         }
         
         public static int Main(String[] args)
         {
             monitor = new Monitor();
             scheduler = new Scheduler(monitor);
-            StartListening();
-            Console.WriteLine("\nPress ENTER to exit...");
-            Console.Read();
+            listener = new Listener(monitor);
+            Thread listening = new Thread(listener.StartListening);
+            listening.Start();
+            menu();
+            //Console.WriteLine("\nPress ENTER to exit...");
+            //Console.Read();
             return 0;
         }
 
