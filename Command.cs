@@ -1,13 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace FAPS
 {
     class Command
     {
+        private String id;      //whose command is this
         private byte[] code;
 
         public byte[] Code
@@ -83,8 +82,13 @@ namespace FAPS
             code = new byte[1];
             size = new byte[4];
             data = null;
+            id = null;
         }
         
+        public void assignCmd(String _id)
+        {
+            id = _id;
+        }
 
         public void setDataSize(byte[] size)
         {

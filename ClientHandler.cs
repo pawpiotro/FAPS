@@ -2,18 +2,16 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FAPS
 {
     class ClientHandler
     {
-        public static int i = 0;
-        Monitor monitor;
-        Socket socket;
-        Boolean readyToSend = true;
+        private Monitor monitor;
+        private Socket socket;
+        private Boolean readyToSend = true;
+        private String id;
+        
 
         private Boolean authenticate(String login, String pass)
         {
@@ -41,7 +39,7 @@ namespace FAPS
             monitor = _monitor;
         }
 
-        private bool login()
+        private bool logIn()
         {
             Command cmd = new Command();
             // send ACCEPT to client
@@ -61,7 +59,10 @@ namespace FAPS
                 String[] tmp = cmd.sData.Split(separators);
                 Console.WriteLine("Login: {0} Pass: {1}", tmp[0], tmp[1]);
                 if (authenticate(tmp[0], tmp[1]))
+                {
+                    id = tmp[0];
                     return true;
+                }
                 else
                 {
                     Console.WriteLine("Invalid login or password");
@@ -80,9 +81,9 @@ namespace FAPS
             monitor.inc();
             monitor.print();
 
-            socket.ReceiveTimeout = 10;
+            socket.ReceiveTimeout = 50;
 
-            if (login())
+            if (logIn())
             { 
                 Console.WriteLine("Success!");
                 Console.WriteLine("Waiting for commands...");
@@ -104,6 +105,7 @@ namespace FAPS
                             cmd.setDataSize(cmd.Size);
                             socket.Receive(cmd.Data);
                         }
+                        cmd.assignCmd(id);
                         switch (cmd.nCode)
                         {
                             case 6:     // download
