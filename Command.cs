@@ -51,15 +51,15 @@ namespace FAPS
         }
         private byte[] noData = { 8, 12, 13, 14, 15, 255 };
 
-        private bool needMore;
+        /*private bool needMore;
 
         public bool NeedMore
         {
             get { return needMore; }
             set { needMore = value; }
-        }
+        }*/
 
-        enum cmd
+        /*enum cmd
         {
             INTRODUCE = 0x01,
             LOGIN = 0x02,
@@ -76,7 +76,7 @@ namespace FAPS
             COMMITACK = 0x0f,
             ERROR = 0x33,
             EXIT = 0xff
-        }
+        }*/
 
         public Command()
         {
@@ -91,13 +91,12 @@ namespace FAPS
             data = new byte[BitConverter.ToInt32(size, 0)];
         }
 
-        public void interpret(byte[] tmp)
+        public bool interpret()
         {
-            Code = tmp;
-            if (noData.Contains<byte>(Code[0]))
-                needMore = false;
+            if (noData.Contains<byte>(code[0]))
+                return false;
             else
-                needMore = true;
+                return true;
 
             /*cmd cmd = (cmd)code[0];
             switch(cmd)

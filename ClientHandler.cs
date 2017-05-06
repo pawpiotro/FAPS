@@ -87,13 +87,37 @@ namespace FAPS
                 Console.WriteLine("Success!");
                 Console.WriteLine("Waiting for commands...");
 
-                Command cmd = new Command();
-                /*while (true)
+                Command cmd;
+                while (true)
                 {
                     try
                     {
+                        cmd = new Command();
                         socket.Receive(cmd.Code);
-                        Console.WriteLine("Text received : {0}", cmd.nCode);
+                        if (cmd.nCode.Equals(255))  //exit
+                        {
+                            // signal stuff
+                            // eot
+                        }
+                        if (cmd.interpret())        // check if command contains data
+                        {
+                            socket.Receive(cmd.Size);
+                            cmd.setDataSize(cmd.Size);
+                            socket.Receive(cmd.Data);
+                        }
+                        switch (cmd.nCode)
+                        {
+                            case 6:     // download
+                                monitor.queueDownload(cmd);
+                                break;
+                            case 7:     // upload
+                                monitor.queueUpload(cmd);
+                                break;  
+                            default:    // other
+                                monitor.queueMisc(cmd);
+                                break;
+                        }
+
                     }
                     catch (SocketException e)
                     {
@@ -103,7 +127,7 @@ namespace FAPS
                             Console.WriteLine("wysylam");
                         }
                     }
-                }*/
+                }
             }
             else
             {
