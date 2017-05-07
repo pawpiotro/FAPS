@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 
 namespace FAPS
@@ -51,46 +52,66 @@ namespace FAPS
                 listener.Bind(localEndPoint);
                 listener.Listen(10);
 
-
                 // Start listening for connections.
                 while (true)
                 {
-                    Console.WriteLine("Waiting for a connection...");
-                    handler = listener.Accept();
+                    try {
+                        Console.WriteLine("Waiting for a connection...");
+                        handler = listener.Accept();
+                        Console.WriteLine("Connected: " + IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
 
-                    // Client send INTRODUCE
-                    handler.Receive(cmd.Code);
-                    Console.WriteLine("ncode " + cmd.nCode);
-                    if (cmd.nCode.Equals(1))
-                    {
-                        //Cliend send secret phrase
-                        handler.Receive(cmd.Size);
-                        Console.WriteLine("nsize " + cmd.nSize);
-                        cmd.setDataSize(cmd.Size);
-                        handler.Receive(cmd.Data);
-                        if (cmd.sData.Equals("zyrafywchodzadoszafy"))
+                        /*
+                        byte[] bytes = new byte[1024];
+                        int rec = handler.Receive(bytes);
+                        Console.WriteLine("bytes received: " + rec);
+                        Console.WriteLine("bytes:"+bytes);
+                        Console.WriteLine("size" + bytes.Length);
+                        String s = Encoding.ASCII.GetString(bytes);
+                        Console.WriteLine("string:"+s);
+                        Console.WriteLine("size" + s.Length);
+                        int i = BitConverter.ToInt32(bytes, 0);
+                        Console.WriteLine("int" + i);
+                        throw new SocketException();*/
+
+                        // Client send INTRODUCE
+                        handler.Receive(cmd.Code);
+                        Console.WriteLine("ncode " + cmd.nCode);
+                        if (cmd.nCode.Equals(1))
                         {
-                            Console.WriteLine("elo");
-                            connected.Add(IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
-                            ClientHandler client = new ClientHandler(monitor, handler);
-                            Thread tmp = new Thread(client.run);
-                            tmp.Start();
+                            //Cliend send secret phrase
+                            handler.Receive(cmd.Size);
+                            Console.WriteLine("nsize " + cmd.nSize);
+                            cmd.setDataSize(cmd.Size);
+                            handler.Receive(cmd.Data);
+                            if (cmd.sData.Equals("zyrafywchodzadoszafy"))
+                            {
+                                Console.WriteLine("elo");
+                                connected.Add(IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
+                                ClientHandler client = new ClientHandler(monitor, handler);
+                                Thread tmp = new Thread(client.run);
+                                tmp.Start();
+                            }
                         }
+                        else
+                            Console.WriteLine("Connection rejected");
                     }
-                    else
-                        Console.WriteLine("Connection rejected");
+                    catch (SocketException e1)
+                    {
+                        Console.WriteLine("Unexpected incoming transmission");
+                    }
 
                 }
 
             }
             catch (Exception e)
             {
-
-                handler.Shutdown(SocketShutdown.Both);
-                handler.Close();
                 Console.WriteLine(e.ToString());
             }
-
+            finally
+            {
+                handler.Shutdown(SocketShutdown.Both);
+                handler.Close();
+            }
         }
     }
 }

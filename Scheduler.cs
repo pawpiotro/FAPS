@@ -1,17 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
+using System.Threading;
 
 namespace FAPS
 {
     class Scheduler
     {
-        Monitor monitor;
+        private Monitor monitor;
         // ServerList
-        bool dwnloading;
-        int lastFrag, maxFrag;
+        private bool dwnloading;
+        private int lastFrag, maxFrag;
         //fifo failedFrags;
         //bool SuccFrags[];
 
@@ -24,6 +23,36 @@ namespace FAPS
             for (i in SuccFrags)
                 SuccFrags[i] = false;
             */
+        }
+
+        private List<Tuple<String, String>> loadServerList()
+        {
+            var serverList = new List<Tuple<String, String>>();
+            String[] result;
+            String[] separators = { ":" };
+            using (StreamReader fs = new StreamReader("servers.txt"))
+            {
+                String line = null;
+                while ((line = fs.ReadLine()) != null)
+                {
+                    result = line.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+                    serverList.Add(Tuple.Create<String, String>(result[0], result[1]));
+                }
+            }
+            return serverList;
+        }
+
+        public bool connectToServers()
+        {
+            var serverList = loadServerList();
+            DataServerHandler dataServer;
+            foreach(Tuple<String, String> t in serverList)
+            {
+                dataServer = new DataServerHandler(monitor, t.Item1, Int32.Parse(t.Item2));
+                Thread dataServerThread = new Thread(dataServer.run);
+                dataServerThread.Start();
+            }
+            return true;
         }
 
         public void Success(int fragment)
