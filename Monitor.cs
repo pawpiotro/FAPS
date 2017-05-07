@@ -7,9 +7,9 @@ namespace FAPS
     {
         private object syncObject = new object();
 
-        private List<Command> uploadQueue = new List<Command>();
-        private List<Command> downloadQueue = new List<Command>();
-        private List<Command> miscQueue = new List<Command>();
+        private Queue<Command> uploadQueue = new Queue<Command>();
+        private Queue<Command> downloadQueue = new Queue<Command>();
+        private Queue<Command> miscQueue = new Queue<Command>();
 
         int i = 0;
 
@@ -33,7 +33,7 @@ namespace FAPS
         {
             lock (syncObject)
             {
-                miscQueue.Add(cmd);
+                miscQueue.Enqueue(cmd);
             }
         }
 
@@ -41,7 +41,7 @@ namespace FAPS
         {
             lock (syncObject)
             { 
-            uploadQueue.Add(cmd);
+                uploadQueue.Enqueue(cmd);
             }
         }
 
@@ -49,7 +49,7 @@ namespace FAPS
         {
             lock (syncObject)
             {
-                downloadQueue.Add(cmd);
+                downloadQueue.Enqueue(cmd);
             }
         }
 
@@ -58,28 +58,59 @@ namespace FAPS
         {
             lock (syncObject)
             {
-                return false;
+                if (downloadQueue.Count == 0)
+                    return false;
+                else
+                    return true;
             }
         }
         public bool ulReady()
         {
             lock (syncObject)
             {
-                return false;
+                if (uploadQueue.Count == 0)
+                    return false;
+                else
+                    return true;
             }
         }
         public bool cmdReady()
         {
             lock (syncObject)
             {
-                return false;
+                if (miscQueue.Count == 0)
+                    return false;
+                else
+                    return true;
             }
         }
 
         // Get file/command waiting
-        // public file dlFetch() { }
-        // public file ulFetch() { }
-        // public cmd cmdFetch() { }
+        public Command dlFetch()
+        {
+            if (downloadQueue.Count == 0)
+                return null;
+            else
+                return downloadQueue.Dequeue();
+        }
+        public Command ulFetch()
+        {
+            if (uploadQueue.Count == 0)
+                return null;
+            else
+                return uploadQueue.Dequeue();
+        }
+        public Command cmdFetch()
+        {
+            if (miscQueue.Count == 0)
+                return null;
+            else
+                return miscQueue.Dequeue();
+        }
+
+        public int dlCount() { return downloadQueue.Count; }
+        public int ulCount() { return uploadQueue.Count; }
+        public int cmdCount() { return miscQueue.Count; }
 
         public int dlSize()     // Return size of file to download
         {
