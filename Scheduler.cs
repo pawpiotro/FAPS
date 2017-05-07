@@ -5,15 +5,10 @@ using System.Threading;
 
 namespace FAPS
 {
-    struct Server
-    {
-        public bool busy;
-        // index, ip??
-    }
     class Scheduler
     {
         private Monitor monitor;
-        private List <Server> ServerList; // TODO change string to other type
+        private List <DataServerHandler> ServerList; // TODO change string to other type
         private bool dwnloading;
         private int lastFrag, maxFrag;
         private Queue <int> failedFrags;
@@ -50,7 +45,7 @@ namespace FAPS
             DataServerHandler dataServer;
             foreach(Tuple<String, String> t in serverList)
             {
-                dataServer = new DataServerHandler(monitor, t.Item1, Int32.Parse(t.Item2));
+                dataServer = new DataServerHandler(monitor, this, t.Item1, Int32.Parse(t.Item2));
                 Thread dataServerThread = new Thread(dataServer.run);
                 dataServerThread.Start();
             }
@@ -64,17 +59,17 @@ namespace FAPS
         }
 
         // Methods creating networking threads for specific purpose
-        private void Download(Command file, int fragment, Server server)
+        private void Download(Command file, int fragment, DataServerHandler server)
         {
             //create ServerHandler(download, file, fragment, this, sever)
         }
 
-        private void Upload(Command file, Server server)
+        private void Upload(Command file, DataServerHandler server)
         {
             //create ServerHandler(upload, file, this)
         }
 
-        private void Command(Command cmd, Server server)
+        private void Command(Command cmd, DataServerHandler server)
         {
             //create ServerHandler(command, cmd, this)
         }
@@ -115,7 +110,7 @@ namespace FAPS
                         // Look through the servers list and start download form idle ones
                         for (int i = 0; i < ServerList.Count; i++)
                         {
-                            Server server = ServerList[i];
+                            DataServerHandler server = ServerList[i];
                             if (!server.busy)
                                 if (failedFrags.Count > 0)   // At least one fragment has to be redownloaded
                                 {
@@ -135,7 +130,7 @@ namespace FAPS
                 {
                     // Upload file on every server;
                     Command ulFile = monitor.ulFetch();
-                    foreach (Server server in ServerList)
+                    foreach (DataServerHandler server in ServerList)
                         Upload(ulFile, server);
                 }
                 if (monitor.cmdReady())
@@ -144,7 +139,7 @@ namespace FAPS
                     /*if (cmd = FILELIST)     // Get the list from one server (since they all share same files)
                         Command(monitor.cmdfetch(), ServerList[0]);
                     else*/
-                        foreach (Server server in ServerList)      // rename, delete etc - pass to all servers
+                        foreach (DataServerHandler server in ServerList)      // rename, delete etc - pass to all servers
                             Command(cmd, server);
                 }
             }

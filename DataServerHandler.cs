@@ -8,14 +8,17 @@ namespace FAPS
     {
 
         private Monitor monitor;
+        private Scheduler scheduler;
         private Socket socket;
         private String address;
         private int port;
         private bool readyToSend = true;
+        public bool busy = false;
 
-        public DataServerHandler(Monitor _monitor, String _address, int _port)
+        public DataServerHandler(Monitor _monitor, Scheduler _scheduler, String _address, int _port)
         {
             monitor = _monitor;
+            scheduler = _scheduler;
             address = _address;
             port = _port;
         }
