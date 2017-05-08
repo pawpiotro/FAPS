@@ -26,7 +26,9 @@ namespace FAPS
         public byte[] Size
         {
             get { return size; }
-            set { size = value;}
+            set {
+                size = value;
+            }
         }
 
         public int nSize

@@ -122,10 +122,10 @@ namespace FAPS
                     }
                     catch (SocketException e)
                     {
-                        Console.WriteLine("timeout");
+                        //Console.WriteLine("timeout");
                         if (readyToSend)
                         {
-                            Console.WriteLine("wysylam");
+                           // Console.WriteLine("wysylam");
                         }
                     }
                     finally

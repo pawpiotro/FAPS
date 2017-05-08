@@ -27,11 +27,10 @@ namespace FAPS
                 Thread.Sleep(1000);
                 input =  Console.ReadLine();
                 Console.WriteLine(input);
-                
                 if (Int32.TryParse(input, out num))          // check if input is number;
                 {
                     if (num.Equals(0))
-                        break;
+                        Environment.Exit(0);
                     switch (num)
                     {
                         case 1:

@@ -8,13 +8,12 @@ namespace FAPS
     class Scheduler
     {
         private Middleman monitor;
-        private List <DataServerHandler> ServerList; // TODO change string to other type
+        private List <DataServerHandler> serverList; // TODO change string to other type
         private bool dwnloading;
         private int lastFrag, maxFrag;
         private Queue <int> failedFrags;
-        private List <bool> SuccFrags;
+        private List <bool> succFrags;
         private Command dlFile;
-        private object cmdlock = new object();
 
         public Scheduler(Middleman _monitor)
         {
@@ -25,7 +24,7 @@ namespace FAPS
 
         private List<Tuple<String, String>> loadServerList()
         {
-            var serverList = new List<Tuple<String, String>>();
+            var tmpServerList = new List<Tuple<String, String>>();
             String[] result;
             String[] separators = { ":" };
             using (StreamReader fs = new StreamReader("servers.txt"))
@@ -34,49 +33,44 @@ namespace FAPS
                 while ((line = fs.ReadLine()) != null)
                 {
                     result = line.Split(separators, StringSplitOptions.RemoveEmptyEntries);
-                    serverList.Add(Tuple.Create<String, String>(result[0], result[1]));
+                    tmpServerList.Add(Tuple.Create<String, String>(result[0], result[1]));
                 }
             }
-            return serverList;
+            return tmpServerList;
         }
 
         public bool connectToServers()
         {
-            var serverList = loadServerList();
+            var tmpServerList = loadServerList();
             DataServerHandler dataServer;
-            foreach(Tuple<String, String> t in serverList)
+            foreach(Tuple<String, String> t in tmpServerList)
             {
-                dataServer = new DataServerHandler(monitor, this, t.Item1, Int32.Parse(t.Item2), cmdlock);
+                dataServer = new DataServerHandler(monitor, this, t.Item1, Int32.Parse(t.Item2));
                 Thread dataServerThread = new Thread(dataServer.run);
                 dataServerThread.Start();
             }
             return true;
         }
 
-        public void Success(int fragment)
+        public void success(int fragment)
         {
             // thready beda to wywolywac przy pomyslnym pobraniu fragmentu
-            SuccFrags[fragment] = true;
+            succFrags[fragment] = true;
         }
 
-        // Methods creating networking threads for specific purpose
-        private void Download(Command file, int fragment, DataServerHandler server)
+        private void download(Command file, int fragment, DataServerHandler server)
         {
             //create ServerHandler(download, file, fragment, this, sever)
         }
 
-        private void Upload(Command file, DataServerHandler server)
+        private void upload(Command file, DataServerHandler server)
         {
             //create ServerHandler(upload, file, this)
         }
 
-        private void Command(Command cmd, DataServerHandler server)
+        private void command(Command cmd, DataServerHandler server)
         {
-            lock (cmdlock)
-            {
-                server.Addcmd(cmd);
-                Monitor.Pulse(cmdlock);
-            }
+                server.addCmd(cmd);
         }
 
         public void run()
@@ -94,9 +88,9 @@ namespace FAPS
                     lastFrag = 0;
                     dlFile = monitor.dlFetch();
                     maxFrag = monitor.dlSize();
-                    SuccFrags = new List <bool> (maxFrag);
+                    succFrags = new List <bool> (maxFrag);
                     for (int i = 0; i < maxFrag; i++)
-                        SuccFrags.Add(false);
+                        succFrags.Add(false);
                 }
                 else if (dwnloading)
                 {
@@ -105,7 +99,7 @@ namespace FAPS
                     {
                         bool done = true;
                         for (int i = 0; i < maxFrag; i++)
-                            if (SuccFrags[i] == false)
+                            if (succFrags[i] == false)
                                 done = false;
                         if (done)   // Did every fragment finished downloading?
                             dwnloading = false;
@@ -113,18 +107,18 @@ namespace FAPS
                     else
                     {
                         // Look through the servers list and start download form idle ones
-                        for (int i = 0; i < ServerList.Count; i++)
+                        for (int i = 0; i < serverList.Count; i++)
                         {
-                            DataServerHandler server = ServerList[i];
+                            DataServerHandler server = serverList[i];
                             if (!server.busy)
                                 if (failedFrags.Count > 0)   // At least one fragment has to be redownloaded
                                 {
-                                    Download(dlFile, failedFrags.Dequeue(), server);
+                                    download(dlFile, failedFrags.Dequeue(), server);
                                     server.busy = true;
                                 }
                                 else if (lastFrag <= maxFrag)
                                 {
-                                    Download(dlFile, lastFrag, server);
+                                    download(dlFile, lastFrag, server);
                                     server.busy = true;
                                     lastFrag++;
                                 }
@@ -135,8 +129,8 @@ namespace FAPS
                 {
                     // Upload file on every server;
                     Command ulFile = monitor.ulFetch();
-                    foreach (DataServerHandler server in ServerList)
-                        Upload(ulFile, server);
+                    foreach (DataServerHandler server in serverList)
+                        upload(ulFile, server);
                 }
                 if (monitor.cmdReady())
                 {
@@ -144,8 +138,8 @@ namespace FAPS
                     /*if (cmd = FILELIST)     // Get the list from one server (since they all share same files)
                         Command(monitor.cmdfetch(), ServerList[0]);
                     else*/
-                        foreach (DataServerHandler server in ServerList)      // rename, delete etc - pass to all servers
-                            Command(cmd, server);
+                        foreach (DataServerHandler server in serverList)      // rename, delete etc - pass to all servers
+                            command(cmd, server);
                 }
             }
         }

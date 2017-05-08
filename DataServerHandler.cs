@@ -16,31 +16,35 @@ namespace FAPS
         private bool readyToSend = true;
         public bool busy = false;
         private Command cmd = null;
-        private object cmdlock;
+        private static object cmdLock = new object();
 
-        public DataServerHandler(Middleman _monitor, Scheduler _scheduler, String _address, int _port, object _cmdlock)
+        public DataServerHandler(Middleman _monitor, Scheduler _scheduler, String _address, int _port)
         {
             monitor = _monitor;
             scheduler = _scheduler;
             address = _address;
             port = _port;
-            cmdlock = _cmdlock;
         }
 
-        public bool Addcmd(Command _cmd)
+        public bool addCmd(Command _cmd)
         {
-            cmd = _cmd;
-            return true;
+            lock (cmdLock)
+            {
+                cmd = _cmd;
+                return true;
+            }
+            //Monitor.Pulse(cmdlock);
+            // WSADZIC GDZIES CMD = NULL !!!!!
         }
 
         private bool logIn()
         {
             // tudududu
-            lock (cmdlock)
+            lock (cmdLock)
             {
                 while (cmd == null)
                 {
-                    Monitor.Wait(cmdlock);
+                    Monitor.Wait(cmdLock);
                 }
                 return true;
             }
