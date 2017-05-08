@@ -17,6 +17,8 @@ namespace FAPS
         public bool busy = false;
         private Command cmd = null;
         private static object cmdLock = new object();
+        private enum State {download, upload, other, idle};
+        private State state = State.idle;
 
         public DataServerHandler(Middleman _monitor, Scheduler _scheduler, String _address, int _port)
         {
@@ -24,16 +26,6 @@ namespace FAPS
             scheduler = _scheduler;
             address = _address;
             port = _port;
-        }
-
-        public bool addCmd(Command _cmd)
-        {
-            lock (cmdLock)
-            {
-                cmd = _cmd;
-                Monitor.Pulse(cmdLock);
-                return true;
-            }
         }
 
         private bool logIn()
@@ -51,11 +43,55 @@ namespace FAPS
             }
         }
 
-        public bool send(string file)
+        public bool addDownload(string file, int frag)
+        {
+            lock (cmdLock)
+            {
+                state = State.download;
+                Monitor.Pulse(cmdLock);
+                return true;
+            }
+        }
+        public bool addUpload(string file)
+        {
+            lock (cmdLock)
+            {
+                state = State.upload;
+                Monitor.Pulse(cmdLock);
+                return true;
+            }
+        }
+        public bool addCmd(Command _cmd)
+        {
+            lock (cmdLock)
+            {
+                cmd = _cmd;
+                state = State.other;
+                Monitor.Pulse(cmdLock);
+                return true;
+            }
+        }
+
+        public bool send(string file)   // BETA MAYBE USELESS
         {
             lock (cmdLock)
             {
                 readyToSend = true;
+                return true;
+            }
+        }
+
+        private bool waitForSch()
+        {
+            lock (cmdLock)
+            {
+                while (state == State.idle)
+                {
+                    Monitor.Wait(cmdLock);
+                }
+                Console.WriteLine(state);
+                cmd = null;
+                state = State.idle;
                 return true;
             }
         }
@@ -82,7 +118,25 @@ namespace FAPS
 
 
                 socket.ReceiveTimeout = 50;
-
+                while (waitForSch())
+                {
+                    switch (state)
+                    {
+                        case State.download:
+                            // Here goes download
+                            Console.WriteLine("Download");
+                            break;
+                        case State.upload:
+                            // Here goes upload
+                            Console.WriteLine("Upload");
+                            break;
+                        case State.other:
+                            // Here goes command send
+                            Console.WriteLine("Command");
+                            break;
+                    }
+                }
+                /*
                 if (logIn())
                 {
                     Command cmd = new Command();
@@ -119,6 +173,7 @@ namespace FAPS
                 {
                     Console.WriteLine("Connection to server " + address + ":" + port + " failed");
                 }
+                */
             }
 
             catch (SocketException se)

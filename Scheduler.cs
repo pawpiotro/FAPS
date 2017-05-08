@@ -8,7 +8,7 @@ namespace FAPS
     class Scheduler
     {
         private Middleman monitor;
-        private List <DataServerHandler> serverList; // TODO change string to other type
+        private List <DataServerHandler> serverList;
         private bool dwnloading;
         private int lastFrag, maxFrag;
         private Queue <int> failedFrags;
