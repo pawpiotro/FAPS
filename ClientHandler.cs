@@ -48,7 +48,6 @@ namespace FAPS
                 // send ACCEPT to client
                 cmd.nCode = 8;
                 socket.Send(cmd.Code);
-                Console.WriteLine("sent code: " + cmd.Code);
                 Console.WriteLine("sent ncode: " + cmd.nCode);
                 // receive command. expecting LOGIN
                 socket.Receive(cmd.Code);
@@ -100,12 +99,14 @@ namespace FAPS
                 
                 socket.ReceiveTimeout = 50;
                 Command cmd = new Command();
+                cmd.nCode = 69;
+                socket.Send(cmd.Code);
                 while (true)
                 {
                     try
                     {
                         socket.Receive(cmd.Code);
-                        Console.WriteLine("elo " + cmd.nCode);
+                        Console.WriteLine("Received code: " + cmd.nCode);
                         if (cmd.nCode.Equals(255))  //exit
                         {
                             break;

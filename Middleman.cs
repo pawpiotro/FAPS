@@ -25,7 +25,7 @@ namespace FAPS
         {
             lock (syncObject)
             {
-                i++; Console.WriteLine("monitor:" + i);
+                i++; Console.WriteLine("monitor(clients):" + i);
             }
         }
 
