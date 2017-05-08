@@ -59,18 +59,19 @@ namespace FAPS
             scheduler = new Scheduler(monitor);
             Thread scheduling = new Thread(scheduler.run);
             scheduling.Start();
-            //listener = new Listener(monitor);
-            //Thread listening = new Thread(listener.StartListening);
-            //listening.Start();
-            //menu();
+            listener = new Listener(monitor);
+            Thread listening = new Thread(listener.StartListening);
+            listening.Start();
+            menu();
             Command cmd = new Command();
-            while (true)
+            monitor.queueMisc(cmd);
+            /*while (true)
             {
                 monitor.queueMisc(cmd);
                 Thread.Sleep(1000);
-            }
-                
-            
+            }*/
+
+
             Console.WriteLine("\nPress ENTER to exit...");
             Console.Read();
             return 0;

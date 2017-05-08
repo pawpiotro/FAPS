@@ -111,9 +111,9 @@ namespace FAPS
 
             try
             {
-                //socket.Connect(remoteEP);
-                Console.WriteLine("Socket connected to {0}");//,
-                    //socket.RemoteEndPoint.ToString());
+                socket.Connect(remoteEP);
+                Console.WriteLine("Socket connected to {0}",
+                    socket.RemoteEndPoint.ToString());
 
 
                 socket.ReceiveTimeout = 50;
