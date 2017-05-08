@@ -31,7 +31,7 @@ namespace FAPS
         private bool logIn()
         {
             // tudududu
-            lock (cmdLock)
+            /*lock (cmdLock)
             {
                 while (cmd == null)
                 {
@@ -40,7 +40,19 @@ namespace FAPS
                 Console.WriteLine("logIn");
                 cmd = null;
                 return true;
-            }
+            }*/
+            //send LOGIN
+            Command tcmd = new Command();
+            tcmd.nCode = 2;
+            socket.Send(tcmd.Code);
+            String s = "user1:pass1";
+            tcmd.nSize = s.Length;
+            Array.Reverse(tcmd.Size);
+            socket.Send(tcmd.Size);
+            tcmd.setDataSize(tcmd.Size);
+            tcmd.sData = s;
+            socket.Send(tcmd.Data);
+            return true;
         }
 
         public bool addDownload(string file, int frag)
@@ -115,6 +127,8 @@ namespace FAPS
                 Console.WriteLine("Socket connected to {0}",
                     socket.RemoteEndPoint.ToString());
 
+                //send LOGIN
+                logIn();
 
                 socket.ReceiveTimeout = 50;
                 while (waitForSch())

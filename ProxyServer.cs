@@ -20,7 +20,7 @@ namespace FAPS
             while(true)
             {
                 Console.Clear();
-                listener.printConnected();
+                //listener.printConnected();
                 Console.WriteLine("===============");
                 Console.Write(
                     "1. Change port\n2. Do smth\n3. Do smth else\n0. Exit\n");
@@ -59,10 +59,10 @@ namespace FAPS
             scheduler = new Scheduler(monitor);
             Thread scheduling = new Thread(scheduler.run);
             scheduling.Start();
-            listener = new Listener(monitor);
-            Thread listening = new Thread(listener.StartListening);
-            listening.Start();
-            menu();
+            //listener = new Listener(monitor);
+            //Thread listening = new Thread(listener.StartListening);
+            //listening.Start();
+            //menu();
             Command cmd = new Command();
             monitor.queueMisc(cmd);
             /*while (true)
