@@ -26,14 +26,15 @@ namespace FAPS
         public byte[] Size
         {
             get { return size; }
-            set {
-                size = value;
-            }
+            set { size = value; }
         }
 
         public int nSize
         {
-            get { return BitConverter.ToInt32(size, 0);}
+            get {
+                if (BitConverter.IsLittleEndian)
+                    Array.Reverse(size);
+                return BitConverter.ToInt32(size, 0);}
             set { size = BitConverter.GetBytes(value); }
         }
 

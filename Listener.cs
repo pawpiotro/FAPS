@@ -37,7 +37,7 @@ namespace FAPS
             }
             IPAddress ipAddress = ipHostInfo.AddressList[0];*/
 
-            IPAddress ipAddress = IPAddress.Parse("127.0.0.1"); 
+            IPAddress ipAddress = IPAddress.Parse("192.168.61.138"); 
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
 
             Socket listener = new Socket(AddressFamily.InterNetwork,
@@ -81,8 +81,6 @@ namespace FAPS
                             //Cliend send secret phrase
                             handler.Receive(cmd.Size);
                             Console.WriteLine("nsize " + cmd.nSize);
-                            Array.Reverse(cmd.Size);
-                            Console.WriteLine("nsize " + cmd.nSize);
                             cmd.setDataSize(cmd.Size);
                             handler.Receive(cmd.Data);
                             if (cmd.sData.Equals("zyrafywchodzadoszafy"))
@@ -105,7 +103,10 @@ namespace FAPS
                     {
                         Console.WriteLine("Michau zjebau");
                     }
-
+                    catch (OutOfMemoryException e3)
+                    {
+                        Console.WriteLine("Tez Michau zjebau");
+                    }
                 }
 
             }

@@ -41,36 +41,48 @@ namespace FAPS
 
         private bool logIn()
         {
-            Command cmd = new Command();
-            // send ACCEPT to client
-            cmd.nCode = 8;
-            socket.Send(cmd.Code);
-            // receive command. expecting LOGIN
-            socket.Receive(cmd.Code);
-            if (cmd.nCode.Equals(2))
+            socket.ReceiveTimeout = 3000;
+            try
             {
-                Console.WriteLine("logging in...");
-                // receive size of login and password
-                socket.Receive(cmd.Size);
-                Console.WriteLine(cmd.nSize);
-                cmd.setDataSize(cmd.Size);
-                socket.Receive(cmd.Data);
-                char[] separators = { ':' };
-                String[] tmp = cmd.sData.Split(separators);
-                Console.WriteLine("Login: {0} Pass: {1}", tmp[0], tmp[1]);
-                if (authenticate(tmp[0], tmp[1]))
+                Command cmd = new Command();
+                // send ACCEPT to client
+                cmd.nCode = 8;
+                socket.Send(cmd.Code);
+                Console.WriteLine("sent code: " + cmd.Code);
+                Console.WriteLine("sent ncode: " + cmd.nCode);
+                // receive command. expecting LOGIN
+                socket.Receive(cmd.Code);
+                if (cmd.nCode.Equals(2))
                 {
-                    id = tmp[0];
-                    return true;
+                    Console.WriteLine("logging in...");
+                    // receive size of login and password
+                    socket.Receive(cmd.Size);
+                    Console.WriteLine(cmd.nSize);
+                    cmd.setDataSize(cmd.Size);
+                    socket.Receive(cmd.Data);
+                    char[] separators = { ':' };
+                    String[] tmp = cmd.sData.Split(separators);
+                    Console.WriteLine("Login: {0} Pass: {1}", tmp[0], tmp[1]);
+                    if (authenticate(tmp[0], tmp[1]))
+                    {
+                        id = tmp[0];
+                        return true;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid login or password");
+                        return false;
+                    }
                 }
                 else
                 {
-                    Console.WriteLine("Invalid login or password");
+                    Console.WriteLine("Unexpected command received.");
                     return false;
                 }
-            } else
+            }
+            catch(SocketException e)
             {
-                Console.WriteLine("Unexpected command received.");
+                Console.WriteLine(e.ToString());
                 return false;
             }
         }
@@ -81,13 +93,12 @@ namespace FAPS
             monitor.inc();
             monitor.print();
 
-            socket.ReceiveTimeout = 50;
-
             if (logIn())
             { 
                 Console.WriteLine("Success!");
                 Console.WriteLine("Waiting for commands...");
-
+                
+                socket.ReceiveTimeout = 50;
                 Command cmd = new Command();
                 while (true)
                 {

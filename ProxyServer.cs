@@ -61,8 +61,9 @@ namespace FAPS
             Thread listening = new Thread(listener.StartListening);
             listening.Start();
             menu();
-            //Console.WriteLine("\nPress ENTER to exit...");
-            //Console.Read();
+            
+            Console.WriteLine("\nPress ENTER to exit...");
+            Console.Read();
             return 0;
         }
 
