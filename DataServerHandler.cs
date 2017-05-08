@@ -31,10 +31,9 @@ namespace FAPS
             lock (cmdLock)
             {
                 cmd = _cmd;
+                Monitor.Pulse(cmdLock);
                 return true;
             }
-            //Monitor.Pulse(cmdlock);
-            // WSADZIC GDZIES CMD = NULL !!!!!
         }
 
         private bool logIn()
@@ -46,6 +45,17 @@ namespace FAPS
                 {
                     Monitor.Wait(cmdLock);
                 }
+                Console.WriteLine("logIn");
+                cmd = null;
+                return true;
+            }
+        }
+
+        public bool send(string file)
+        {
+            lock (cmdLock)
+            {
+                readyToSend = true;
                 return true;
             }
         }
@@ -90,6 +100,10 @@ namespace FAPS
                             if (readyToSend)
                             {
                                 Console.WriteLine("wysylam");
+                                lock (cmdLock)
+                                {
+                                    readyToSend = false;
+                                }
                             }
                         }
                         finally
