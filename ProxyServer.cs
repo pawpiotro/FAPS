@@ -6,7 +6,7 @@ namespace FAPS
     class ProxyServer
     {
         private static Scheduler scheduler;
-        private static Monitor monitor;
+        private static Middleman monitor;
         private static Listener listener;
 
         private static void changePort() { }
@@ -56,7 +56,7 @@ namespace FAPS
         
         public static int Main(String[] args)
         {
-            monitor = new Monitor();
+            monitor = new Middleman();
             scheduler = new Scheduler(monitor);
             listener = new Listener(monitor);
             Thread listening = new Thread(listener.StartListening);

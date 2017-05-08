@@ -1,32 +1,49 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace FAPS
 {
     class DataServerHandler
     {
 
-        private Monitor monitor;
+        private Middleman monitor;
         private Scheduler scheduler;
         private Socket socket;
         private String address;
         private int port;
         private bool readyToSend = true;
         public bool busy = false;
+        private Command cmd = null;
+        private object cmdlock;
 
-        public DataServerHandler(Monitor _monitor, Scheduler _scheduler, String _address, int _port)
+        public DataServerHandler(Middleman _monitor, Scheduler _scheduler, String _address, int _port, object _cmdlock)
         {
             monitor = _monitor;
             scheduler = _scheduler;
             address = _address;
             port = _port;
+            cmdlock = _cmdlock;
+        }
+
+        public bool Addcmd(Command _cmd)
+        {
+            cmd = _cmd;
+            return true;
         }
 
         private bool logIn()
         {
             // tudududu
-            return true;
+            lock (cmdlock)
+            {
+                while (cmd == null)
+                {
+                    Monitor.Wait(cmdlock);
+                }
+                return true;
+            }
         }
 
         public void run()

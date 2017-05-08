@@ -7,15 +7,16 @@ namespace FAPS
 {
     class Scheduler
     {
-        private Monitor monitor;
+        private Middleman monitor;
         private List <DataServerHandler> ServerList; // TODO change string to other type
         private bool dwnloading;
         private int lastFrag, maxFrag;
         private Queue <int> failedFrags;
         private List <bool> SuccFrags;
         private Command dlFile;
+        private object cmdlock = new object();
 
-        public Scheduler(Monitor _monitor)
+        public Scheduler(Middleman _monitor)
         {
             monitor = _monitor;
             monitor.print();
@@ -45,7 +46,7 @@ namespace FAPS
             DataServerHandler dataServer;
             foreach(Tuple<String, String> t in serverList)
             {
-                dataServer = new DataServerHandler(monitor, this, t.Item1, Int32.Parse(t.Item2));
+                dataServer = new DataServerHandler(monitor, this, t.Item1, Int32.Parse(t.Item2), cmdlock);
                 Thread dataServerThread = new Thread(dataServer.run);
                 dataServerThread.Start();
             }
@@ -71,7 +72,11 @@ namespace FAPS
 
         private void Command(Command cmd, DataServerHandler server)
         {
-            //create ServerHandler(command, cmd, this)
+            lock (cmdlock)
+            {
+                server.Addcmd(cmd);
+                Monitor.Pulse(cmdlock);
+            }
         }
 
         public void run()

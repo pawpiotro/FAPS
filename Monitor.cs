@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace FAPS
 {
-    class Monitor
+    class Middleman
     {
         private object syncObject = new object();
 
