@@ -48,7 +48,7 @@ namespace FAPS
                 // send ACCEPT to client
                 cmd.nCode = 8;
                 socket.Send(cmd.Code);
-                //Console.WriteLine("sent ncode: " + cmd.nCode);
+                Console.WriteLine("sent ncode: " + cmd.nCode);
                 // receive command. expecting LOGIN
                 socket.Receive(cmd.Code);
                 if (cmd.nCode.Equals(2))
@@ -56,8 +56,7 @@ namespace FAPS
                     Console.WriteLine("logging in...");
                     // receive size of login and password
                     socket.Receive(cmd.Size);
-                    cmd.revSize();
-                    //Console.WriteLine(cmd.nSize);
+                    Console.WriteLine(cmd.nSize);
                     cmd.setDataSize(cmd.Size);
                     socket.Receive(cmd.Data);
                     char[] separators = { ':' };
@@ -106,9 +105,7 @@ namespace FAPS
                 {
                     try
                     {
-                        int recBytes = socket.Receive(cmd.Code);
-                        if (recBytes == 0)
-                            break;
+                        socket.Receive(cmd.Code);
                         Console.WriteLine("Received code: " + cmd.nCode);
                         if (cmd.nCode.Equals(255))  //exit
                         {
@@ -117,7 +114,6 @@ namespace FAPS
                         if (cmd.interpret())        // check if command contains data
                         {
                             socket.Receive(cmd.Size);
-                            cmd.revSize();
                             cmd.setDataSize(cmd.Size);
                             socket.Receive(cmd.Data);
                         }

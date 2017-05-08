@@ -60,20 +60,32 @@ namespace FAPS
                         handler = listener.Accept();
                         Console.WriteLine("Connected: " + IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
 
+                        /*
+                        byte[] bytes = new byte[1024];
+                        int rec = handler.Receive(bytes);
+                        Console.WriteLine("bytes received: " + rec);
+                        Console.WriteLine("bytes:"+bytes);
+                        Console.WriteLine("size" + bytes.Length);
+                        String s = Encoding.ASCII.GetString(bytes);
+                        Console.WriteLine("string:"+s);
+                        Console.WriteLine("size" + s.Length);
+                        int i = BitConverter.ToInt32(bytes, 0);
+                        Console.WriteLine("int" + i);
+                        throw new SocketException();*/
+
                         // Client send INTRODUCE
                         handler.Receive(cmd.Code);
-                        //Console.WriteLine("ncode " + cmd.nCode);
+                        Console.WriteLine("ncode " + cmd.nCode);
                         if (cmd.nCode.Equals(1))
                         {
                             //Cliend send secret phrase
                             handler.Receive(cmd.Size);
-                            cmd.revSize();
-                            //Console.WriteLine("nsize " + cmd.nSize);
+                            Console.WriteLine("nsize " + cmd.nSize);
                             cmd.setDataSize(cmd.Size);
                             handler.Receive(cmd.Data);
                             if (cmd.sData.Equals("zyrafywchodzadoszafy"))
                             {
-                                Console.WriteLine("hello");
+                                Console.WriteLine("elo");
                                 connected.Add(IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
                                 ClientHandler client = new ClientHandler(monitor, handler);
                                 Thread tmp = new Thread(client.run);
@@ -86,7 +98,6 @@ namespace FAPS
                     catch (SocketException e1)
                     {
                         Console.WriteLine("Unexpected incoming transmission");
-                        Console.WriteLine(e1.ToString());
                     }
                     catch (OverflowException e2)
                     {
