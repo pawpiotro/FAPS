@@ -47,7 +47,7 @@
     <Compile Include="Command.cs" />
     <Compile Include="DataServerHandler.cs" />
     <Compile Include="Listener.cs" />
-    <Compile Include="Monitor.cs" />
+    <Compile Include="Middleman.cs" />
     <Compile Include="ProxyServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Scheduler.cs" />
