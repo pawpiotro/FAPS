@@ -103,7 +103,6 @@ namespace FAPS
                 }
                 Console.WriteLine(state);
                 cmd = null;
-                state = State.idle;
                 return true;
             }
         }
@@ -139,14 +138,17 @@ namespace FAPS
                         case State.download:
                             // Here goes download
                             Console.WriteLine("Download");
+                            state = State.idle;
                             break;
                         case State.upload:
                             // Here goes upload
                             Console.WriteLine("Upload");
+                            state = State.idle;
                             break;
                         case State.other:
                             // Here goes command send
                             Console.WriteLine("Command");
+                            state = State.idle;
                             break;
                     }
                 }
