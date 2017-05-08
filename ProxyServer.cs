@@ -24,7 +24,7 @@ namespace FAPS
                 Console.WriteLine("===============");
                 Console.Write(
                     "1. Change port\n2. Do smth\n3. Do smth else\n0. Exit\n");
-                Thread.Sleep(1000);
+                Console.WriteLine("===============");
                 input =  Console.ReadLine();
                 Console.WriteLine(input);
                 if (Int32.TryParse(input, out num))          // check if input is number;

@@ -31,10 +31,7 @@ namespace FAPS
 
         public int nSize
         {
-            get {
-                if (BitConverter.IsLittleEndian)
-                    Array.Reverse(size);
-                return BitConverter.ToInt32(size, 0);}
+            get { return BitConverter.ToInt32(size, 0);}
             set { size = BitConverter.GetBytes(value); }
         }
 
@@ -52,7 +49,13 @@ namespace FAPS
             set { data = Encoding.ASCII.GetBytes(value); }
         }
         private byte[] noData = { 8, 12, 13, 14, 15, 255 };
+        private byte[] needMoreData = { 1, 2, 5, 6, 7, 9, 10, 11, 51 };
 
+        public void revSize()
+        {
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(size);
+        }
         /*private bool needMore;
 
         public bool NeedMore
@@ -100,10 +103,10 @@ namespace FAPS
 
         public bool interpret()
         {
-            if (noData.Contains<byte>(code[0]))
-                return false;
-            else
+            if (needMoreData.Contains<byte>(code[0]))
                 return true;
+            else
+                return false;
 
             /*cmd cmd = (cmd)code[0];
             switch(cmd)
