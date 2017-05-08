@@ -31,10 +31,7 @@ namespace FAPS
 
         public int nSize
         {
-            get {
-                if (BitConverter.IsLittleEndian)
-                    Array.Reverse(size);
-                return BitConverter.ToInt32(size, 0);}
+            get { return BitConverter.ToInt32(size, 0); }
             set { size = BitConverter.GetBytes(value); }
         }
 
@@ -52,42 +49,50 @@ namespace FAPS
             set { data = Encoding.ASCII.GetBytes(value); }
         }
         private byte[] noData = { 8, 12, 13, 14, 15, 255 };
+        private byte[] needMoreData = { 1, 2, 5, 6, 7, 9, 10, 11, 51 };
 
-        /*private bool needMore;
 
-        public bool NeedMore
-        {
-            get { return needMore; }
-            set { needMore = value; }
-        }*/
+    /*private bool needMore;
 
-        /*enum cmd
-        {
-            INTRODUCE = 0x01,
-            LOGIN = 0x02,
-            LIST = 0x05,
-            DOWNLOAD = 0x06,
-            UPLOAD = 0x07,
-            ACCEPT = 0x08,
-            CHUNK = 0x09,
-            DELETE = 0x0a,
-            RENAME = 0x0b,
-            COMMIT = 0x0c,
-            ROLLBACK = 0x0d,
-            COMMITRDY = 0x0e,
-            COMMITACK = 0x0f,
-            ERROR = 0x33,
-            EXIT = 0xff
-        }*/
+    public bool NeedMore
+    {
+        get { return needMore; }
+        set { needMore = value; }
+    }*/
 
-        public Command()
+    /*enum cmd
+    {
+        INTRODUCE = 0x01,
+        LOGIN = 0x02,
+        LIST = 0x05,
+        DOWNLOAD = 0x06,
+        UPLOAD = 0x07,
+        ACCEPT = 0x08,
+        CHUNK = 0x09,
+        DELETE = 0x0a,
+        RENAME = 0x0b,
+        COMMIT = 0x0c,
+        ROLLBACK = 0x0d,
+        COMMITRDY = 0x0e,
+        COMMITACK = 0x0f,
+        ERROR = 0x33,
+        EXIT = 0xff
+    }*/
+
+    public Command()
         {
             code = new byte[1];
             size = new byte[4];
             data = null;
             id = null;
         }
-        
+
+        public void revSize()
+        {
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(size);
+        }
+
         public void assignCmd(String _id)
         {
             id = _id;
@@ -100,10 +105,10 @@ namespace FAPS
 
         public bool interpret()
         {
-            if (noData.Contains<byte>(code[0]))
-                return false;
-            else
+            if (needMoreData.Contains<byte>(code[0]))
                 return true;
+            else
+                return false;
 
             /*cmd cmd = (cmd)code[0];
             switch(cmd)

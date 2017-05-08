@@ -24,7 +24,6 @@ namespace FAPS
                 Console.WriteLine("===============");
                 Console.Write(
                     "1. Change port\n2. Do smth\n3. Do smth else\n0. Exit\n");
-                Thread.Sleep(1000);
                 input =  Console.ReadLine();
                 Console.WriteLine(input);
                 if (Int32.TryParse(input, out num))          // check if input is number;
@@ -56,7 +55,7 @@ namespace FAPS
         public static int Main(String[] args)
         {
             monitor = new Middleman();
-            scheduler = new Scheduler(monitor);
+            //scheduler = new Scheduler(monitor);
             listener = new Listener(monitor);
             Thread listening = new Thread(listener.StartListening);
             listening.Start();

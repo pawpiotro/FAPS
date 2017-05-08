@@ -30,17 +30,6 @@ namespace FAPS
 
         private bool logIn()
         {
-            // tudududu
-            /*lock (cmdLock)
-            {
-                while (cmd == null)
-                {
-                    Monitor.Wait(cmdLock);
-                }
-                Console.WriteLine("logIn");
-                cmd = null;
-                return true;
-            }*/
             //send LOGIN
             Command tcmd = new Command();
             tcmd.nCode = 2;
@@ -52,7 +41,11 @@ namespace FAPS
             tcmd.setDataSize(tcmd.Size);
             tcmd.sData = s;
             socket.Send(tcmd.Data);
-            return true;
+            socket.Receive(tcmd.Code);      //wait for answer
+            if (tcmd.nCode.Equals(8))       //ACCEPT
+                return true;
+            else
+                return false;
         }
 
         public bool addDownload(string file, int frag)
@@ -128,68 +121,37 @@ namespace FAPS
                     socket.RemoteEndPoint.ToString());
 
                 //send LOGIN
-                logIn();
-
-                socket.ReceiveTimeout = 50;
-                while (waitForSch())
-                {
-                    switch (state)
-                    {
-                        case State.download:
-                            // Here goes download
-                            Console.WriteLine("Download");
-                            state = State.idle;
-                            break;
-                        case State.upload:
-                            // Here goes upload
-                            Console.WriteLine("Upload");
-                            state = State.idle;
-                            break;
-                        case State.other:
-                            // Here goes command send
-                            Console.WriteLine("Command");
-                            state = State.idle;
-                            break;
-                    }
-                }
-                /*
                 if (logIn())
                 {
-                    Command cmd = new Command();
-                    while (true)
+                    Console.WriteLine("Logged in to data server");
+
+                    socket.ReceiveTimeout = 50;
+                    while (waitForSch())
                     {
-                        try
+                        switch (state)
                         {
-                            socket.Receive(cmd.Code);
-                            if (cmd.nCode.Equals(255))
+                            case State.download:
+                                // Here goes download
+                                Console.WriteLine("Download");
+                                state = State.idle;
+                                break;
+                            case State.upload:
+                                // Here goes upload
+                                Console.WriteLine("Upload");
+                                state = State.idle;
+                                break;
+                            case State.other:
+                                // Here goes command send
+                                Console.WriteLine("Command");
+                                state = State.idle;
                                 break;
                         }
-                        catch (SocketException e)
-                        {
-                            Console.WriteLine("timeout");
-                            if (readyToSend)
-                            {
-                                Console.WriteLine("wysylam");
-                                lock (cmdLock)
-                                {
-                                    readyToSend = false;
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            cmd = new Command();
-                        }
                     }
-
-                    socket.Shutdown(SocketShutdown.Both);
-                    socket.Close();
                 }
                 else
                 {
-                    Console.WriteLine("Connection to server " + address + ":" + port + " failed");
+                    Console.WriteLine("Login failed");
                 }
-                */
             }
 
             catch (SocketException se)
