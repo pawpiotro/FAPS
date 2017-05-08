@@ -7,7 +7,7 @@ namespace FAPS
 {
     class ClientHandler
     {
-        private Monitor monitor;
+        private Middleman monitor;
         private Socket socket;
         private Boolean readyToSend = true;
         private String id;
@@ -33,7 +33,7 @@ namespace FAPS
                 return false;
         }
 
-        public ClientHandler(Monitor _monitor, Socket _socket)
+        public ClientHandler(Middleman _monitor, Socket _socket)
         {
             socket = _socket;
             monitor = _monitor;

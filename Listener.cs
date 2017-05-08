@@ -9,10 +9,10 @@ namespace FAPS
 {
     class Listener
     {
-        private static Monitor monitor;
+        private static Middleman monitor;
         private List<String> connected = new List<String>();
 
-        public Listener(Monitor _monitor)
+        public Listener(Middleman _monitor)
         {
             monitor = _monitor;
         }
