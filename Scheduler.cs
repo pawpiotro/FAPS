@@ -20,6 +20,11 @@ namespace FAPS
             monitor = _monitor;
             monitor.print();
             dwnloading = false;
+            serverList = new List<DataServerHandler>();
+            DataServerHandler dataServer = new DataServerHandler(monitor, this, "127.0.0.1", 5555);
+            serverList.Add(dataServer);
+            Thread dataServerThread = new Thread(dataServer.run);
+            dataServerThread.Start();
         }
 
         private List<Tuple<String, String>> loadServerList()
