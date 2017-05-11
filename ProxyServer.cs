@@ -55,7 +55,7 @@ namespace FAPS
         public static int Main(String[] args)
         {
             monitor = new Middleman();
-            //scheduler = new Scheduler(monitor);
+            scheduler = new Scheduler(monitor);
             listener = new Listener(monitor);
             Thread listening = new Thread(listener.StartListening);
             listening.Start();
