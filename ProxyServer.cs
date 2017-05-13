@@ -5,12 +5,14 @@ namespace FAPS
 {
     class ProxyServer
     {
+        private static CancellationTokenSource cts = new CancellationTokenSource();
+
         private static Scheduler scheduler;
         private static Middleman monitor;
         private static Listener listener;
 
         private static void changePort() { }
-        private static void doSmth() { }
+        private static void doSmth() { cts.Cancel(false); }
         private static void doSmthElse() { }
         
         private static void menu()
@@ -19,7 +21,7 @@ namespace FAPS
             int num;
             while(true)
             {
-                Console.Clear();
+                //Console.Clear();
                 listener.printConnected();
                 Console.WriteLine("===============");
                 Console.Write(
@@ -55,14 +57,14 @@ namespace FAPS
         public static int Main(String[] args)
         {
             monitor = new Middleman();
-            //scheduler = new Scheduler(monitor);
-            //Thread scheduling = new Thread(scheduler.run);
-            //scheduling.Start();
-            listener = new Listener(monitor);
-            Thread listening = new Thread(listener.StartListening);
-            listening.Start();
+            //scheduler = new Scheduler(monitor, cts.Token);
+            //scheduler.startThread();
+            listener = new Listener(monitor, cts.Token);
+            listener.startThread();
+            
             menu();
 
+            cts.Dispose();
             Console.WriteLine("\nPress ENTER to exit...");
             Console.Read();
             return 0;

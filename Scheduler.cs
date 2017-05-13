@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace FAPS
 {
@@ -14,10 +15,12 @@ namespace FAPS
         private Queue <int> failedFrags;
         private List <bool> succFrags;
         private Command dlFile;
+        private CancellationToken token;
 
-        public Scheduler(Middleman _monitor)
+        public Scheduler(Middleman _monitor, CancellationToken _token)
         {
             monitor = _monitor;
+            token = _token;
             monitor.print();
             dwnloading = false;
             serverList = new List<DataServerHandler>();
@@ -25,6 +28,11 @@ namespace FAPS
             serverList.Add(dataServer);
             Thread dataServerThread = new Thread(dataServer.run);
             dataServerThread.Start();
+        }
+
+        public Task startThread()
+        {
+            return Task.Factory.StartNew(run, token);
         }
 
         private List<Tuple<String, String>> loadServerList()

@@ -105,7 +105,7 @@ namespace FAPS
         public void getCmd(Socket socket, String _id)
         {
             id = _id;
-            socket.ReceiveTimeout = 100;
+            socket.ReceiveTimeout = 1000;
             try
             {
                 int rec = socket.Receive(Code);
@@ -135,7 +135,7 @@ namespace FAPS
 
         public void sendCmd(Socket socket)
         {
-            socket.SendTimeout = 100;
+            socket.SendTimeout = 1000;
             try
             {
                 socket.Send(Code);

@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace FAPS
 {
@@ -13,10 +14,22 @@ namespace FAPS
         private List<String> connected = new List<String>();
         private Socket listener;
         private Socket handler;
+        private CancellationToken token;
 
-        public Listener(Middleman _monitor)
+        public Listener(Middleman _monitor, CancellationToken _token)
         {
             monitor = _monitor;
+            token = _token;
+        }
+
+        public Task startThread()
+        {
+            return Task.Factory.StartNew(StartListening, token);
+        }
+
+        public void CancelAsync()
+        {
+            Console.WriteLine("CANCEL");
         }
 
         public void printConnected()
@@ -56,13 +69,13 @@ namespace FAPS
         private void handleClient()
         {
             connected.Add(IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
-            ClientHandler client = new ClientHandler(monitor, handler);
-            Thread tmp = new Thread(client.run);
-            tmp.Start();
+            ClientHandler client = new ClientHandler(monitor, handler, token);
+            client.startThread();
         }
 
         public void StartListening()
         {
+            CancellationTokenRegistration ctr = token.Register(CancelAsync);
             try
             {
                 IPAddress ipAddress = IPAddress.Parse("127.0.0.1");//192.168.60.160"); 
@@ -77,7 +90,8 @@ namespace FAPS
                 // Start listening for connections.
                 while (true)
                 {
-                    try {
+                    try
+                    {
                         Console.WriteLine("Waiting for a connection...");
                         handler = listener.Accept();
                         Console.WriteLine("Connected: " + IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
@@ -109,9 +123,13 @@ namespace FAPS
             }
             finally
             {
-                listener.Shutdown(SocketShutdown.Both);
-                listener.Close();
+                if (listener.Connected)
+                { 
+                    listener.Shutdown(SocketShutdown.Both);
+                    listener.Close();
+                }
             }
+            Console.WriteLine("Listener Thread has ended");
         }
     }
 }

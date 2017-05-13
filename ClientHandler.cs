@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace FAPS
 {
@@ -11,7 +13,26 @@ namespace FAPS
         private Socket socket;
         private Boolean readyToSend = true;
         private String id;
+        private CancellationToken token;
+
+        public ClientHandler(Middleman _monitor, Socket _socket, CancellationToken _token)
+        {
+            socket = _socket;
+            monitor = _monitor;
+            token = _token;
+        }
         
+        public Task startThread()
+        {
+            return Task.Factory.StartNew(run, token);
+        }
+
+        public void CancelAsync()
+        {
+            Console.WriteLine("CANCEL");
+            socket.Shutdown(SocketShutdown.Both);
+            socket.Close();
+        }
 
         private Boolean authenticate(String login, String pass)
         {
@@ -33,23 +54,19 @@ namespace FAPS
                 return false;
         }
 
-        public ClientHandler(Middleman _monitor, Socket _socket)
-        {
-            socket = _socket;
-            monitor = _monitor;
-        }
-
         private void connectionCreationConfirmation()
         {
             try
             {
                 Command cmd = new Command(Command.cmd.ACCEPT);
                 cmd.sendCmd(socket);
+                Console.WriteLine(cmd.eCode);
             }catch(SocketException se)
             {
                 throw new SocketException(se.ErrorCode);
             }
         }
+
         private bool logIn()
         {
             socket.ReceiveTimeout = 3000;
@@ -90,7 +107,10 @@ namespace FAPS
 
         public void run()
         {
-            
+            CancellationTokenRegistration ctr = token.Register(CancelAsync);
+            monitor.inc();
+            monitor.print();
+
             connectionCreationConfirmation();
             if (logIn())
             { 
@@ -137,7 +157,7 @@ namespace FAPS
                     }
                     catch(Exception e)
                     {
-                        Console.WriteLine("Client closed connection.");
+                        Console.WriteLine("Connection with client closed");
                         break;
                     }
                     finally
@@ -151,8 +171,11 @@ namespace FAPS
             {
                 Console.WriteLine("Login failed");
             }
-            socket.Shutdown(SocketShutdown.Both);
-            socket.Close();
+            if (socket.Connected)
+            {
+                socket.Shutdown(SocketShutdown.Both);
+                socket.Close();
+            }
             Console.WriteLine("Client handler thread has ended");
         }
 
