@@ -55,12 +55,14 @@ namespace FAPS
         public static int Main(String[] args)
         {
             monitor = new Middleman();
-            scheduler = new Scheduler(monitor);
+            //scheduler = new Scheduler(monitor);
+            //Thread scheduling = new Thread(scheduler.run);
+            //scheduling.Start();
             listener = new Listener(monitor);
             Thread listening = new Thread(listener.StartListening);
             listening.Start();
             menu();
-            
+
             Console.WriteLine("\nPress ENTER to exit...");
             Console.Read();
             return 0;

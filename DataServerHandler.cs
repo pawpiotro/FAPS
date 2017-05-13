@@ -36,7 +36,7 @@ namespace FAPS
             socket.Send(tcmd.Code);
             String s = "user1:pass1";
             tcmd.nSize = s.Length;
-            Array.Reverse(tcmd.Size);
+            tcmd.revSize();
             socket.Send(tcmd.Size);
             tcmd.setDataSize(tcmd.Size);
             tcmd.sData = s;

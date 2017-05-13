@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 
 namespace FAPS
@@ -79,7 +81,7 @@ namespace FAPS
         EXIT = 0xff
     }*/
 
-    public Command()
+        public Command()
         {
             code = new byte[1];
             size = new byte[4];
@@ -87,23 +89,82 @@ namespace FAPS
             id = null;
         }
 
-        public void revSize()
+        /*public Command()
+        {
+            code = new byte[1];
+            size = new byte[4];
+            data = null;
+            id = null;
+        }
+
+        public Command()
+        {
+            code = new byte[1];
+            size = new byte[4];
+            data = null;
+            id = null;
+        }*/
+        public Command getCmd(Socket socket) // return Command?
+        {
+            socket.ReceiveTimeout = 100;
+            try
+            {
+                socket.Receive(Code);
+                if (interpret())
+                {
+                    socket.Receive(Size);
+                    IPAddress.NetworkToHostOrder(nSize);
+                    data = new byte[nSize];
+                    socket.Receive(Data)
+                }
+            } catch(SocketException se)
+            {
+                return null;
+            }
+            return this;
+        }
+
+        public bool sendCmd(Socket socket, byte c)
+        {
+            nCode = c;
+            socket.Send(Code);
+            return true;
+        }
+
+        public bool sendCmd(Socket socket, byte c, int s, Object d)
+        {
+            socket.SendTimeout = 100;
+            try
+            {
+                nCode = c;
+                socket.Send(Code);
+                //nSize = sizeof(d); ?? UNSAFE
+                nSize = s;
+                socket.Send(Size);
+                data = Encoding.ASCII.GetBytes(d.ToString()); // dunno 
+                socket.Send(data);
+            } catch(SocketException se)
+            { 
+                return false;
+            }
+
+            return true;
+        }
+
+        /*
+        private void revSize()
         {
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(size);
         }
+        
 
         public void assignCmd(String _id)
         {
             id = _id;
         }
 
-        public void setDataSize(byte[] size)
-        {
-            data = new byte[BitConverter.ToInt32(size, 0)];
-        }
-
-        public bool interpret()
+        private bool interpret()
         {
             if (needMoreData.Contains<byte>(code[0]))
                 return true;

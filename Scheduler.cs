@@ -21,7 +21,7 @@ namespace FAPS
             monitor.print();
             dwnloading = false;
             serverList = new List<DataServerHandler>();
-            DataServerHandler dataServer = new DataServerHandler(monitor, this, "89.76.215.230", 2666);
+            DataServerHandler dataServer = new DataServerHandler(monitor, this, "192.168.61.240", 2666);//"89.76.215.230", 2666);
             serverList.Add(dataServer);
             Thread dataServerThread = new Thread(dataServer.run);
             dataServerThread.Start();

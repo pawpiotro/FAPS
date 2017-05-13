@@ -29,7 +29,7 @@ namespace FAPS
         {
             Command cmd = new Command();
 
-            IPAddress ipAddress = IPAddress.Parse("192.168.0.16"); 
+            IPAddress ipAddress = IPAddress.Parse("127.0.0.1");//192.168.60.160"); 
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
 
             Socket listener = new Socket(AddressFamily.InterNetwork,
@@ -59,7 +59,8 @@ namespace FAPS
                         {
                             //Client send secret phrase
                             handler.Receive(cmd.Size);
-                            cmd.revSize();
+                            IPAddress.NetworkToHostOrder(cmd.nSize);
+                            //cmd.revSize();
                             Console.WriteLine("nsize " + cmd.nSize);
                             cmd.setDataSize(cmd.Size);
                             handler.Receive(cmd.Data);
