@@ -60,7 +60,7 @@ namespace FAPS
         }
 
         // Others
-        private byte[] needMoreData = { 0x01, 0x02, 0x05, 0x06, 0x07, 0x09, 0x0a, 0x0b, 0x33 };
+        private byte[] needMoreDataCmds = { 0x01, 0x02, 0x05, 0x06, 0x07, 0x09, 0x0a, 0x0b, 0x33 };
 
         public enum cmd
         {
@@ -101,8 +101,8 @@ namespace FAPS
             id = null;
         }
 
-        // Sockets
-        public void getCmd(Socket socket, String _id) // return Command?
+        // Communication methods
+        public void getCmd(Socket socket, String _id)
         {
             id = _id;
             socket.ReceiveTimeout = 100;
@@ -111,7 +111,7 @@ namespace FAPS
                 int rec = socket.Receive(Code);
                 if (rec.Equals(0))
                     throw new Exception();
-                if (interpret())
+                if (needMoreData())
                 {
                     rec = 0;
                     do
@@ -139,7 +139,7 @@ namespace FAPS
             try
             {
                 socket.Send(Code);
-                if (interpret())
+                if (needMoreData())
                 {
                     int sent = 0;
                     do
@@ -161,9 +161,9 @@ namespace FAPS
         }
 
         // Other methods
-        private bool interpret()
+        private bool needMoreData()
         {
-            if (needMoreData.Contains<byte>(code[0]))
+            if (needMoreDataCmds.Contains<byte>(code[0]))
                 return true;
             else
                 return false;
