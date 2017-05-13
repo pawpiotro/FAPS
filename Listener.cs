@@ -11,6 +11,8 @@ namespace FAPS
     {
         private static Middleman monitor;
         private List<String> connected = new List<String>();
+        private Socket listener;
+        private Socket handler;
 
         public Listener(Middleman _monitor)
         {
@@ -25,22 +27,50 @@ namespace FAPS
             }
         }
 
-        public void StartListening()
+        private bool clientIntroduced()
         {
             Command cmd = new Command();
+            cmd.getCmd(handler, null);
+            Console.WriteLine(cmd.eCode);
+            Console.WriteLine(cmd.nSize);
+            Console.WriteLine(cmd.sData);
+            if (cmd.eCode.Equals(Command.cmd.INTRODUCE))
+            {
+                if (cmd.sData.Equals("zyrafywchodzadoszafy"))
+                {
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine("Incorrect secret phrase.");
+                    return false;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Connection rejected");
+                return false;
+            }
+        }
 
-            IPAddress ipAddress = IPAddress.Parse("127.0.0.1");//192.168.60.160"); 
-            IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
+        private void handleClient()
+        {
+            connected.Add(IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
+            ClientHandler client = new ClientHandler(monitor, handler);
+            Thread tmp = new Thread(client.run);
+            tmp.Start();
+        }
 
-            Socket listener = new Socket(AddressFamily.InterNetwork,
-                SocketType.Stream, ProtocolType.Tcp);
-
-            // Bind the socket to the local endpoint and   
-            // listen for incoming connections.  
-            Socket handler = null;
-
+        public void StartListening()
+        {
             try
             {
+                IPAddress ipAddress = IPAddress.Parse("127.0.0.1");//192.168.60.160"); 
+                IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
+
+                listener = new Socket(AddressFamily.InterNetwork,
+                    SocketType.Stream, ProtocolType.Tcp);
+
                 listener.Bind(localEndPoint);
                 listener.Listen(10);
 
@@ -52,29 +82,10 @@ namespace FAPS
                         handler = listener.Accept();
                         Console.WriteLine("Connected: " + IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
 
-                        // Client send INTRODUCE
-                        handler.Receive(cmd.Code);
-                        Console.WriteLine("ncode " + cmd.nCode);
-                        if (cmd.nCode.Equals(1))
+                        if (clientIntroduced())
                         {
-                            //Client send secret phrase
-                            handler.Receive(cmd.Size);
-                            IPAddress.NetworkToHostOrder(cmd.nSize);
-                            //cmd.revSize();
-                            Console.WriteLine("nsize " + cmd.nSize);
-                            cmd.setDataSize(cmd.Size);
-                            handler.Receive(cmd.Data);
-                            if (cmd.sData.Equals("zyrafywchodzadoszafy"))
-                            {
-                                Console.WriteLine("hello");
-                                connected.Add(IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
-                                ClientHandler client = new ClientHandler(monitor, handler);
-                                Thread tmp = new Thread(client.run);
-                                tmp.Start();
-                            }
+                            handleClient();
                         }
-                        else
-                            Console.WriteLine("Connection rejected");
                     }
                     catch (SocketException e1)
                     {

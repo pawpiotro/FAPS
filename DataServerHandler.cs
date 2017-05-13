@@ -30,19 +30,12 @@ namespace FAPS
 
         private bool logIn()
         {
-            //send LOGIN
-            Command tcmd = new Command();
-            tcmd.nCode = 2;
-            socket.Send(tcmd.Code);
             String s = "user1:pass1";
-            tcmd.nSize = s.Length;
-            tcmd.revSize();
-            socket.Send(tcmd.Size);
-            tcmd.setDataSize(tcmd.Size);
-            tcmd.sData = s;
-            socket.Send(tcmd.Data);
-            socket.Receive(tcmd.Code);      //wait for answer
-            if (tcmd.nCode.Equals(8))       //ACCEPT
+            Command tcmd = new Command(Command.cmd.LOGIN, s);
+            tcmd.sendCmd(socket);
+            tcmd = new Command();
+            tcmd.getCmd(socket, null);
+            if (tcmd.eCode.Equals(Command.cmd.ACCEPT))
                 return true;
             else
                 return false;
@@ -124,8 +117,6 @@ namespace FAPS
                 if (logIn())
                 {
                     Console.WriteLine("Logged in to data server");
-
-                    socket.ReceiveTimeout = 50;
                     while (waitForSch())
                     {
                         switch (state)

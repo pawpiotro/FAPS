@@ -39,27 +39,28 @@ namespace FAPS
             monitor = _monitor;
         }
 
+        private void connectionCreationConfirmation()
+        {
+            try
+            {
+                Command cmd = new Command(Command.cmd.ACCEPT);
+                cmd.sendCmd(socket);
+            }catch(SocketException se)
+            {
+                throw new SocketException(se.ErrorCode);
+            }
+        }
         private bool logIn()
         {
             socket.ReceiveTimeout = 3000;
             try
             {
                 Command cmd = new Command();
-                // send ACCEPT to client
-                cmd.nCode = 8;
-                socket.Send(cmd.Code);
-                //Console.WriteLine("sent ncode: " + cmd.nCode);
-                // receive command. expecting LOGIN
-                socket.Receive(cmd.Code);
-                if (cmd.nCode.Equals(2))
+                cmd.getCmd(socket, null);
+                
+                if (cmd.eCode.Equals(Command.cmd.LOGIN))
                 {
                     Console.WriteLine("logging in...");
-                    // receive size of login and password
-                    socket.Receive(cmd.Size);
-                    cmd.revSize();
-                    //Console.WriteLine(cmd.nSize);
-                    cmd.setDataSize(cmd.Size);
-                    socket.Receive(cmd.Data);
                     char[] separators = { ':' };
                     String[] tmp = cmd.sData.Split(separators);
                     Console.WriteLine("Login: {0} Pass: {1}", tmp[0], tmp[1]);
@@ -89,48 +90,38 @@ namespace FAPS
 
         public void run()
         {
-
-            monitor.inc();
-            monitor.print();
-
+            
+            connectionCreationConfirmation();
             if (logIn())
             { 
                 Console.WriteLine("Success!");
                 Console.WriteLine("Waiting for commands...");
                 
-                socket.ReceiveTimeout = 50;
+                // TEMP
                 Command cmd = new Command();
                 cmd.nCode = 69;
                 socket.Send(cmd.Code);
+                // 
+
                 while (true)
                 {
                     try
                     {
-                        int recBytes = socket.Receive(cmd.Code);
-                        if (recBytes == 0)
-                            break;
+                        cmd.getCmd(socket, id);
                         Console.WriteLine("Received code: " + cmd.nCode);
-                        if (cmd.nCode.Equals(255))  //exit
+                        if (cmd.eCode.Equals(Command.cmd.EXIT))
                         {
                             break;
                         }
-                        if (cmd.interpret())        // check if command contains data
-                        {
-                            socket.Receive(cmd.Size);
-                            cmd.revSize();
-                            cmd.setDataSize(cmd.Size);
-                            socket.Receive(cmd.Data);
-                        }
-                        cmd.assignCmd(id);
                         switch (cmd.nCode)
                         {
-                            case 6:     // download
+                            case 6:
                                 monitor.queueDownload(cmd);
                                 break;
-                            case 7:     // upload
+                            case 7:
                                 monitor.queueUpload(cmd);
                                 break;
-                            default:    // other
+                            default:
                                 monitor.queueMisc(cmd);
                                 break;
                         }
@@ -144,6 +135,11 @@ namespace FAPS
                            // Console.WriteLine("wysylam");
                         }
                     }
+                    catch(Exception e)
+                    {
+                        Console.WriteLine("Client closed connection.");
+                        break;
+                    }
                     finally
                     {
                         cmd = new Command();
@@ -155,9 +151,9 @@ namespace FAPS
             {
                 Console.WriteLine("Login failed");
             }
-            Console.WriteLine("CH exit");
             socket.Shutdown(SocketShutdown.Both);
             socket.Close();
+            Console.WriteLine("Client handler thread has ended");
         }
 
     }
