@@ -5,15 +5,27 @@ namespace FAPS
 {
     class ProxyServer
     {
-        private static CancellationTokenSource cts = new CancellationTokenSource();
+        private static CancellationTokenSource ctsListener = new CancellationTokenSource();
+        private static CancellationTokenSource ctsScheduler = new CancellationTokenSource();
 
         private static Scheduler scheduler;
         private static Middleman monitor;
         private static Listener listener;
 
-        private static void changePort() { }
-        private static void doSmth() { cts.Cancel(false); }
-        private static void doSmthElse() { }
+        private static void changePort()
+        {
+            //ctsListener.Cancel(false);
+            //get new address and port from console
+            //listener = new Listener(address, port, monitor, ctsListener.Token);
+        }
+        private static void doSmth()        // TEMP
+        {
+            ctsListener.Cancel(false);
+        }
+        private static void doSmthElse()    // TEMP
+        {
+
+        }
         
         private static void menu()
         {
@@ -31,7 +43,7 @@ namespace FAPS
                 if (Int32.TryParse(input, out num))          // check if input is number;
                 {
                     if (num.Equals(0))
-                        Environment.Exit(0);
+                        Environment.Exit(0);    // TEMP
                     switch (num)
                     {
                         case 1:
@@ -56,15 +68,24 @@ namespace FAPS
         
         public static int Main(String[] args)
         {
+            if (args.Length < 2)
+            { 
+                Console.WriteLine("Not enough arguments.");
+                return 0;
+            }
+            
             monitor = new Middleman();
-            //scheduler = new Scheduler(monitor, cts.Token);
-            //scheduler.startThread();
-            listener = new Listener(monitor, cts.Token);
-            listener.startThread();
+
+            scheduler = new Scheduler(monitor, ctsScheduler.Token);
+            scheduler.startService();
+
+            listener = new Listener(args[0], args[1], monitor, ctsListener.Token);
+            listener.startService();
             
             menu();
 
-            cts.Dispose();
+            ctsListener.Dispose();
+            ctsScheduler.Dispose();
             Console.WriteLine("\nPress ENTER to exit...");
             Console.Read();
             return 0;

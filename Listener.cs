@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,31 +9,61 @@ namespace FAPS
 {
     class Listener
     {
+        private string address;
+        private string port;
+
         private static Middleman monitor;
-        private List<String> connected = new List<String>();
+        private List<string> connected = new List<string>();
         private Socket listener;
         private Socket handler;
         private CancellationToken token;
 
-        public Listener(Middleman _monitor, CancellationToken _token)
+        public Listener(string _address, string _port, Middleman _monitor, CancellationToken _token)
         {
+            address = _address;
+            port = _port;
             monitor = _monitor;
             token = _token;
         }
 
-        public Task startThread()
+        public string Address
+        {
+            get { return address; }
+            set { address = value; }
+        }
+
+        public string Port
+        {
+            get { return port; }
+            set { port = value; }
+        }
+
+        public Task startService()
         {
             return Task.Factory.StartNew(StartListening, token);
         }
 
         public void CancelAsync()
         {
-            Console.WriteLine("CANCEL");
+            Console.WriteLine("LISTENER CANCEL");
+            
+            try
+            {
+                if (listener.Connected)
+                {
+                    listener.Shutdown(SocketShutdown.Both);
+                }
+                listener.Close();
+            }
+            catch (SocketException se)
+            {
+                Console.WriteLine(se.ToString());
+            }
         }
 
         public void printConnected()
         {
-            foreach(String s in connected)
+            foreach(string s in connected)
             {
                 Console.WriteLine(s);
             }
@@ -78,8 +107,8 @@ namespace FAPS
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
             try
             {
-                IPAddress ipAddress = IPAddress.Parse("127.0.0.1");//192.168.60.160"); 
-                IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
+                IPAddress ipAddress = IPAddress.Parse(address); 
+                IPEndPoint localEndPoint = new IPEndPoint(ipAddress, Int32.Parse(port));
 
                 listener = new Socket(AddressFamily.InterNetwork,
                     SocketType.Stream, ProtocolType.Tcp);
@@ -88,7 +117,7 @@ namespace FAPS
                 listener.Listen(10);
 
                 // Start listening for connections.
-                while (true)
+                while (!token.IsCancellationRequested)
                 {
                     try
                     {

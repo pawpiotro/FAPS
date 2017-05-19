@@ -9,7 +9,7 @@ namespace FAPS
     class Scheduler
     {
         private Middleman monitor;
-        private List <DataServerHandler> serverList;
+        private List<DataServerHandler> serverList = new List<DataServerHandler>();
         private bool dwnloading;
         private int lastFrag, maxFrag;
         private Queue <int> failedFrags;
@@ -23,14 +23,11 @@ namespace FAPS
             token = _token;
             monitor.print();
             dwnloading = false;
-            serverList = new List<DataServerHandler>();
-            DataServerHandler dataServer = new DataServerHandler(monitor, this, "192.168.61.240", 2666);//"89.76.215.230", 2666);
-            serverList.Add(dataServer);
-            Thread dataServerThread = new Thread(dataServer.run);
-            dataServerThread.Start();
+
+            connectToServers();
         }
 
-        public Task startThread()
+        public Task startService()
         {
             return Task.Factory.StartNew(run, token);
         }
@@ -58,9 +55,10 @@ namespace FAPS
             DataServerHandler dataServer;
             foreach(Tuple<String, String> t in tmpServerList)
             {
+                Console.WriteLine("SCHEDULER: " + t.Item1 + ":" + t.Item2);
                 dataServer = new DataServerHandler(monitor, this, t.Item1, Int32.Parse(t.Item2));
-                Thread dataServerThread = new Thread(dataServer.run);
-                dataServerThread.Start();
+                Task.Factory.StartNew(run, token);
+                serverList.Add(dataServer);
             }
             return true;
         }
@@ -92,7 +90,7 @@ namespace FAPS
                 zrob komendy
                 profit
             */
-            while(true)
+            while(!token.IsCancellationRequested)
             {
                 if (!dwnloading && monitor.dlReady())
                 {

@@ -99,6 +99,8 @@ namespace FAPS
             monitor.inc();
             monitor.print();
 
+            Console.WriteLine("DATASERVER: " + address + ":" + port);
+            /*
             IPAddress ipAddress = IPAddress.Parse(address);
             IPEndPoint remoteEP = new IPEndPoint(ipAddress, port);
 
@@ -152,7 +154,7 @@ namespace FAPS
             catch (Exception e)
             {
                 Console.WriteLine("Unexpected exception : {0}", e.ToString());
-            }
+            }*/
         }
 
     }

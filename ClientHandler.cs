@@ -29,9 +29,15 @@ namespace FAPS
 
         public void CancelAsync()
         {
-            Console.WriteLine("CANCEL");
-            socket.Shutdown(SocketShutdown.Both);
-            socket.Close();
+            Console.WriteLine("CLIENT HANDLER CANCEL");
+            try
+            {
+                socket.Shutdown(SocketShutdown.Both);
+                socket.Close();
+            } catch(SocketException se)
+            {
+                Console.WriteLine(se.ToString());
+            }
         }
 
         private Boolean authenticate(String login, String pass)
@@ -123,7 +129,7 @@ namespace FAPS
                 socket.Send(cmd.Code);
                 // 
 
-                while (true)
+                while (!token.IsCancellationRequested)
                 {
                     try
                     {
