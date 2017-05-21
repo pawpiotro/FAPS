@@ -13,6 +13,11 @@ namespace FAPS
 
         public void processCommand(Command cmd)
         {
+            // TEMP, bo nie chcialo mi sie pisac 10 razy
+            if (!(((Command.CMD)cmd.nCode).Equals(Command.CMD.LOGIN)
+                || clientSession.State.Equals(ClientSession.STATE.logged)))
+                return;
+
             switch((Command.CMD)cmd.nCode)
             {
                 case Command.CMD.INTRODUCE:

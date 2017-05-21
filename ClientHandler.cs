@@ -54,7 +54,6 @@ namespace FAPS
             {
                 Command cmd = new Command(Command.CMD.ACCEPT);
                 cmdTrans.sendCmd(socket, cmd);
-                Console.WriteLine(cmd.eCode);
             }catch(SocketException se)
             {
                 throw new SocketException(se.ErrorCode);
