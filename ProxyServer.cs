@@ -14,13 +14,17 @@ namespace FAPS
 
         private static void changePort()
         {
-            //ctsListener.Cancel(false);
+            /*
+            ctsListener.Cancel();  //stop service
             //get new address and port from console
-            //listener = new Listener(address, port, monitor, ctsListener.Token);
+            listener.Address = new_address;
+            listener.Port = new_port;
+            listener.startService();
+            */
         }
         private static void doSmth()        // TEMP
         {
-            ctsListener.Cancel(false);
+            ctsListener.Cancel();
         }
         private static void doSmthElse()    // TEMP
         {
@@ -43,7 +47,11 @@ namespace FAPS
                 if (Int32.TryParse(input, out num))          // check if input is number;
                 {
                     if (num.Equals(0))
+                    {
+                        ctsListener.Cancel();
+                        ctsScheduler.Cancel();
                         Environment.Exit(0);    // TEMP
+                    }
                     switch (num)
                     {
                         case 1:

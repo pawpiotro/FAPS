@@ -69,39 +69,6 @@ namespace FAPS
             }
         }
 
-        private bool clientIntroduced()
-        {
-            Command cmd = new Command();
-            cmd.getCmd(handler, null);
-            Console.WriteLine(cmd.eCode);
-            Console.WriteLine(cmd.nSize);
-            Console.WriteLine(cmd.sData);
-            if (cmd.eCode.Equals(Command.cmd.INTRODUCE))
-            {
-                if (cmd.sData.Equals("zyrafywchodzadoszafy"))
-                {
-                    return true;
-                }
-                else
-                {
-                    Console.WriteLine("Incorrect secret phrase.");
-                    return false;
-                }
-            }
-            else
-            {
-                Console.WriteLine("Connection rejected");
-                return false;
-            }
-        }
-
-        private void handleClient()
-        {
-            connected.Add(IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
-            ClientHandler client = new ClientHandler(monitor, handler, token);
-            client.startThread();
-        }
-
         public void StartListening()
         {
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
@@ -125,10 +92,10 @@ namespace FAPS
                         handler = listener.Accept();
                         Console.WriteLine("Connected: " + IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
 
-                        if (clientIntroduced())
-                        {
-                            handleClient();
-                        }
+                        connected.Add(IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
+                        ClientHandler client = new ClientHandler(monitor, handler, token);
+                        client.startThread();
+
                     }
                     catch (SocketException e1)
                     {

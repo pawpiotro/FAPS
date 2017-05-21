@@ -44,7 +44,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClientHandler.cs" />
+    <Compile Include="ClientSession.cs" />
     <Compile Include="Command.cs" />
+    <Compile Include="CommandProcessor.cs" />
+    <Compile Include="CommandTransceiver.cs" />
     <Compile Include="DataServerHandler.cs" />
     <Compile Include="Listener.cs" />
     <Compile Include="Middleman.cs" />

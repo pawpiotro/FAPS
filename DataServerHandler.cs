@@ -10,15 +10,19 @@ namespace FAPS
 
         private Middleman monitor;
         private Scheduler scheduler;
+
         private Socket socket;
-        private String address;
+        private string address;
         private int port;
+
         private bool readyToSend = true;
         public bool busy = false;
-        private Command cmd = null;
+        private Command cmd = null;     // current?
         private static object cmdLock = new object();
         private enum State {download, upload, other, idle};
         private State state = State.idle;
+
+        private CommandTransceiver cmdTrans = new CommandTransceiver();
 
         public DataServerHandler(Middleman _monitor, Scheduler _scheduler, String _address, int _port)
         {
@@ -28,14 +32,14 @@ namespace FAPS
             port = _port;
         }
 
+        // ZROBCIE COS Z TYM
         private bool logIn()
         {
             String s = "user1:pass1";
-            Command tcmd = new Command(Command.cmd.LOGIN, s);
-            tcmd.sendCmd(socket);
-            tcmd = new Command();
-            tcmd.getCmd(socket, null);
-            if (tcmd.eCode.Equals(Command.cmd.ACCEPT))
+            Command tcmd = new Command(Command.CMD.LOGIN, s);
+            cmdTrans.sendCmd(socket, tcmd);
+            tcmd = cmdTrans.getCmd(socket, null);
+            if (tcmd.eCode.Equals(Command.CMD.ACCEPT))
                 return true;
             else
                 return false;
