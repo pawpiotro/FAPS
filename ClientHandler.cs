@@ -13,7 +13,7 @@ namespace FAPS
         private CancellationToken token;
 
 
-        private ClientSession clientSession = new ClientSession();
+        private ClientSession clientSession;
 
         private CommandTransceiver cmdTrans = new CommandTransceiver();
         private CommandProcessor cmdProc;
@@ -25,6 +25,7 @@ namespace FAPS
             monitor = _monitor;
             token = _token;
 
+            clientSession = new ClientSession(monitor);
             cmdProc = new CommandProcessor(clientSession);
         }
         
@@ -72,7 +73,7 @@ namespace FAPS
             {
                 cmd = cmdTrans.getCmd(socket, null);
                 cmdProc.processCommand(cmd);
-                if (clientSession.State.Equals(ClientSession.STATE.logged))
+                if (clientSession.State.Equals(ClientSession.STATE.idle))
                     break;
                 else
                     Console.WriteLine("Login failed");
@@ -85,29 +86,13 @@ namespace FAPS
             //LISTEN FOR COMMANDS
             Console.WriteLine("Waiting for commands...");
 
-            while (!token.IsCancellationRequested)
+            while (!token.IsCancellationRequested && !(clientSession.State.Equals(ClientSession.STATE.stop)))
             {
                 try
-                {
+                { 
                     cmd = cmdTrans.getCmd(socket, clientSession.ID);
                     Console.WriteLine("Received code: " + cmd.nCode);
-                    if (cmd.eCode.Equals(Command.CMD.EXIT))
-                    {
-                        break;
-                    }
-                    switch (cmd.nCode)
-                    {
-                        case 6:
-                            monitor.queueDownload(cmd);
-                            break;
-                        case 7:
-                            monitor.queueUpload(cmd);
-                            break;
-                        default:
-                            monitor.queueMisc(cmd);
-                            break;
-                    }
-
+                    cmdProc.processCommand(cmd);
                 }
                 catch (SocketException e)
                 {
@@ -121,11 +106,6 @@ namespace FAPS
                 {
                     Console.WriteLine("Connection with client closed");
                     break;
-                }
-                finally
-                {
-                    cmd = new Command();
-                    //System.Threading.Thread.Sleep(1000);
                 }
             }
 

@@ -24,7 +24,7 @@ namespace FAPS
 
         private CommandTransceiver cmdTrans = new CommandTransceiver();
 
-        public DataServerHandler(Middleman _monitor, Scheduler _scheduler, String _address, int _port)
+        public DataServerHandler(Middleman _monitor, Scheduler _scheduler, string _address, int _port)
         {
             monitor = _monitor;
             scheduler = _scheduler;
@@ -35,7 +35,7 @@ namespace FAPS
         // ZROBCIE COS Z TYM
         private bool logIn()
         {
-            String s = "user1:pass1";
+            string s = "user1:pass1";
             Command tcmd = new Command(Command.CMD.LOGIN, s);
             cmdTrans.sendCmd(socket, tcmd);
             tcmd = cmdTrans.getCmd(socket, null);
@@ -117,7 +117,7 @@ namespace FAPS
             {
                 socket.Connect(remoteEP);
                 Console.WriteLine("Socket connected to {0}",
-                    socket.RemoteEndPoint.ToString());
+                    socket.RemoteEndPoint.Tostring());
 
                 //send LOGIN
                 if (logIn())
@@ -153,7 +153,7 @@ namespace FAPS
 
             catch (SocketException se)
             {
-                Console.WriteLine("SocketException : {0}", se.ToString());
+                Console.WriteLine("SocketException : {0}", se.Totring());
             }
             catch (Exception e)
             {

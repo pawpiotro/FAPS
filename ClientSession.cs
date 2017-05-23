@@ -7,7 +7,8 @@ namespace FAPS
     class ClientSession
     {
         private string id;
-        public enum STATE { unauthenticated , logged, waiting, working };
+        public enum STATE { unauthenticated, waitForAccept, accepted, idle, working, stop };
+        private Middleman monitor;
 
         public string ID
         {
@@ -21,7 +22,19 @@ namespace FAPS
             set { state = value; }
         }
 
+        public Middleman Monitor
+        {
+            get { return monitor; }
+            set { monitor = value; }
+        }
+
+
         private STATE state = STATE.unauthenticated;
+
+        public ClientSession(Middleman _monitor)
+        {
+            monitor = _monitor;
+        }
 
         public void authenticate(String login, String pass)
         {
@@ -38,7 +51,7 @@ namespace FAPS
                 }
             }
             if (list.Contains(Tuple.Create<String, String>(login, pass)))
-                state = STATE.logged;
+                state = STATE.idle;
         }
     }
 }
