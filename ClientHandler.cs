@@ -50,8 +50,6 @@ namespace FAPS
         public void run()
         {
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
-            monitor.inc();
-            monitor.print();
 
             Command cmd = new Command();
             while (!token.IsCancellationRequested && !(clientSession.State.Equals(ClientSession.STATE.stop)))

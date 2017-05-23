@@ -7,6 +7,7 @@ namespace FAPS
     {
         private static CancellationTokenSource ctsListener = new CancellationTokenSource();
         private static CancellationTokenSource ctsScheduler = new CancellationTokenSource();
+        private static CancellationTokenSource ctsMiddleman = new CancellationTokenSource();
 
         private static Scheduler scheduler;
         private static Middleman monitor;
@@ -82,7 +83,7 @@ namespace FAPS
                 return 0;
             }
             
-            monitor = new Middleman();
+            monitor = new Middleman(ctsMiddleman.Token);
 
             scheduler = new Scheduler(monitor, ctsScheduler.Token);
             scheduler.startService();

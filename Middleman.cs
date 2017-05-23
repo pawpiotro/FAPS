@@ -1,88 +1,58 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Threading;
 
 namespace FAPS
 {
     class Middleman
     {
-        private object syncObject = new object();
+        private CancellationToken token;
 
-        private Queue<Command> uploadQueue = new Queue<Command>();
-        private Queue<Command> downloadQueue = new Queue<Command>();
-        private Queue<Command> miscQueue = new Queue<Command>();
+        private BlockingCollection<Command> uploadQueue = new BlockingCollection<Command>();
+        private BlockingCollection<Command> downloadQueue = new BlockingCollection<Command>();
+        private BlockingCollection<Command> miscQueue = new BlockingCollection<Command>();
 
-        int i = 0;
-
-        public void inc()
+        public Middleman(CancellationToken _token)
         {
-            lock (syncObject)
-            {
-                i++;
-            }
-        }
-
-        public void print()
-        {
-            lock (syncObject)
-            {
-                i++; Console.WriteLine("monitor(clients):" + i);
-            }
+            token = _token;
         }
 
         public void queueMisc(Command cmd)
         {
-            lock (syncObject)
-            {
-                miscQueue.Enqueue(cmd);
-            }
+                miscQueue.Add(cmd, token);
         }
 
         public void queueUpload(Command cmd)
         {
-            lock (syncObject)
-            { 
-                uploadQueue.Enqueue(cmd);
-            }
+                uploadQueue.Add(cmd, token);
         }
 
         public void queueDownload(Command cmd)
         {
-            lock (syncObject)
-            {
-                downloadQueue.Enqueue(cmd);
-            }
+                downloadQueue.Add(cmd, token);
         }
 
         // Is there file waiting to download/upload/command?
         public bool dlReady()
         {
-            lock (syncObject)
-            {
                 if (downloadQueue.Count == 0)
                     return false;
                 else
                     return true;
-            }
         }
         public bool ulReady()
         {
-            lock (syncObject)
-            {
                 if (uploadQueue.Count == 0)
                     return false;
                 else
                     return true;
-            }
         }
         public bool cmdReady()
         {
-            lock (syncObject)
-            {
                 if (miscQueue.Count == 0)
                     return false;
                 else
                     return true;
-            }
         }
 
         // Get file/command waiting
@@ -91,21 +61,21 @@ namespace FAPS
             if (downloadQueue.Count == 0)
                 return null;
             else
-                return downloadQueue.Dequeue();
+                return downloadQueue.Take(token);
         }
         public Command ulFetch()
         {
             if (uploadQueue.Count == 0)
                 return null;
             else
-                return uploadQueue.Dequeue();
+                return uploadQueue.Take(token);
         }
         public Command cmdFetch()
         {
             if (miscQueue.Count == 0)
                 return null;
             else
-                return miscQueue.Dequeue();
+                return miscQueue.Take(token);
         }
 
         public int dlCount() { return downloadQueue.Count; }
@@ -114,10 +84,7 @@ namespace FAPS
 
         public int dlSize()     // Return size of file to download
         {
-            lock (syncObject)
-            {
                 return 0;
-            }
         }
     }
 }
