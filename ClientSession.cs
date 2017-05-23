@@ -9,6 +9,7 @@ namespace FAPS
         private string id;
         public enum STATE { unauthenticated, waitForAccept, accepted, idle, working, stop };
         private Middleman monitor;
+        private Queue<Command> toSend = new Queue<Command>();
 
         public string ID
         {
@@ -26,6 +27,12 @@ namespace FAPS
         {
             get { return monitor; }
             set { monitor = value; }
+        }
+
+        public Queue<Command> ToSend
+        {
+            get { return toSend; }
+            set { toSend = value; }
         }
 
 

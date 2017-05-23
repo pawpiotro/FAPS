@@ -47,20 +47,6 @@ namespace FAPS
             }
         }
 
-
-
-        private void connectionCreationConfirmation()
-        {
-            try
-            {
-                Command cmd = new Command(Command.CMD.ACCEPT);
-                cmdTrans.sendCmd(socket, cmd);
-            }catch(SocketException se)
-            {
-                throw new SocketException(se.ErrorCode);
-            }
-        }
-
         public void run()
         {
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
@@ -68,24 +54,6 @@ namespace FAPS
             monitor.print();
 
             Command cmd = new Command();
-
-            while (!token.IsCancellationRequested)
-            {
-                cmd = cmdTrans.getCmd(socket, null);
-                cmdProc.processCommand(cmd);
-                if (clientSession.State.Equals(ClientSession.STATE.idle))
-                    break;
-                else
-                    Console.WriteLine("Login failed");
-            }
-            
-            //LOGGED IN
-            Console.WriteLine("Login successful!");
-            //SEND CONFIRMATION
-            connectionCreationConfirmation();
-            //LISTEN FOR COMMANDS
-            Console.WriteLine("Waiting for commands...");
-
             while (!token.IsCancellationRequested && !(clientSession.State.Equals(ClientSession.STATE.stop)))
             {
                 try
@@ -93,6 +61,8 @@ namespace FAPS
                     cmd = cmdTrans.getCmd(socket, clientSession.ID);
                     Console.WriteLine("Received code: " + cmd.nCode);
                     cmdProc.processCommand(cmd);
+                    if (clientSession.ToSend.Count > 0)
+                        cmdTrans.sendCmd(socket, clientSession.ToSend.Dequeue());
                 }
                 catch (SocketException e)
                 {

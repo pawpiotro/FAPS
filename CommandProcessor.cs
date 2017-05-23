@@ -5,7 +5,6 @@ namespace FAPS
     class CommandProcessor
     {
         ClientSession clientSession;
-
         public CommandProcessor(ClientSession cs)
         {
             clientSession = cs; 
@@ -134,11 +133,14 @@ namespace FAPS
             clientSession.authenticate(tmp[0], tmp[1]);
             if(clientSession.State.Equals(ClientSession.STATE.idle))
             {
+                Console.WriteLine("Login successful");
                 clientSession.ID = tmp[0];
+                Command ctmp = new Command(Command.CMD.ACCEPT);
+                clientSession.ToSend.Enqueue(ctmp);
             }
             else
             {
-                Console.WriteLine("Invalid login or password");
+                Console.WriteLine("Login failed");
             }
         }
 
