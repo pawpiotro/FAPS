@@ -17,6 +17,7 @@ namespace FAPS
         private Socket listener;
         private Socket handler;
         private CancellationToken token;
+        private List<CancellationTokenSource> chtokens = new List<CancellationTokenSource>();
 
         public Listener(string _address, string _port, Middleman _monitor, CancellationToken _token)
         {
@@ -46,7 +47,10 @@ namespace FAPS
         public void CancelAsync()
         {
             Console.WriteLine("LISTENER CANCEL");
-            
+            foreach(CancellationTokenSource ct in chtokens)
+            {
+                ct.Cancel();
+            }
             try
             {
                 if (listener.Connected)
@@ -93,7 +97,9 @@ namespace FAPS
                         Console.WriteLine("Connected: " + IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
 
                         connected.Add(IPAddress.Parse(((IPEndPoint)handler.RemoteEndPoint).Address.ToString()) + ":" + ((IPEndPoint)handler.RemoteEndPoint).Port.ToString());
-                        ClientHandler client = new ClientHandler(monitor, handler, token);
+                        CancellationTokenSource cts = new CancellationTokenSource();
+                        chtokens.Add(cts);
+                        ClientHandler client = new ClientHandler(monitor, handler, cts);
                         client.startThread();
 
                     }

@@ -9,21 +9,20 @@ namespace FAPS
     {
         private Middleman monitor;
         private Socket socket;
+        private CancellationTokenSource cts;
         private CancellationToken token;
-
-
         private ClientSession clientSession;
 
         private CommandTransceiver cmdTrans = new CommandTransceiver();
         private CommandProcessor cmdProc;
 
 
-        public ClientHandler(Middleman _monitor, Socket _socket, CancellationToken _token)
+        public ClientHandler(Middleman _monitor, Socket _socket, CancellationTokenSource _cts)
         {
             socket = _socket;
             monitor = _monitor;
-            token = _token;
-
+            cts = _cts;
+            token = cts.Token;
             clientSession = new ClientSession(monitor);
             cmdProc = new CommandProcessor(clientSession);
         }
@@ -53,7 +52,6 @@ namespace FAPS
         public void runReceiver()
         {
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
-
             Command cmd = new Command();
             while (!token.IsCancellationRequested && !(clientSession.State.Equals(ClientSession.STATE.stop)))
             {

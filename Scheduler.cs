@@ -23,7 +23,6 @@ namespace FAPS
             token = _token;
             dwnloading = false;
 
-            connectToServers();
         }
 
         public Task startService()
@@ -85,12 +84,13 @@ namespace FAPS
 
         public void run()
         {
+            connectToServers();
             /*   wez komendy
                 zrob komendy
                 profit
                 */
-            
-            while(!token.IsCancellationRequested)
+
+            while (!token.IsCancellationRequested)
             {
                 /*if (!dwnloading && monitor.dlReady())
                 {

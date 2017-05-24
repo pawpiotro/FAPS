@@ -57,7 +57,7 @@ namespace FAPS
             {
                 Console.WriteLine("Logged in to data server");
                 Task.Factory.StartNew(runSender, token);
-                //Task.Factory.StartNew(runReceiver, token);
+                Task.Factory.StartNew(runReceiver, token);
             }
         }
 
