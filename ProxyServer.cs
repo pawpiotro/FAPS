@@ -78,25 +78,28 @@ namespace FAPS
         
         public static int Main(String[] args)
         {
-            if (args.Length < 2)
-            { 
-                Console.WriteLine("Not enough arguments.");
-                return 0;
+            if (args.Length >= 2)
+            {
+                
+                monitor = new Middleman(ctsMiddleman.Token);
+
+                scheduler = new Scheduler(monitor, ctsScheduler.Token);
+                scheduler.startService();
+
+                listener = new Listener(args[0], args[1], monitor, ctsListener.Token);
+                listener.startService();
+
+                menu();
+
+                ctsListener.Dispose();
+                ctsScheduler.Dispose();
+                ctsMiddleman.Dispose();
+
             }
-            
-            monitor = new Middleman(ctsMiddleman.Token);
-
-            scheduler = new Scheduler(monitor, ctsScheduler.Token);
-            scheduler.startService();
-
-            listener = new Listener(args[0], args[1], monitor, ctsListener.Token);
-            listener.startService();
-            
-            menu();
-
-            ctsListener.Dispose();
-            ctsScheduler.Dispose();
-            ctsMiddleman.Dispose();
+            else
+            {
+                Console.WriteLine("Not enough arguments.");
+            }
             Console.WriteLine("\nPress ENTER to exit...");
             Console.Read();
             return 0;

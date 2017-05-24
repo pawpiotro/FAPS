@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace FAPS
 {
@@ -10,6 +11,7 @@ namespace FAPS
 
         private Middleman monitor;
         private Scheduler scheduler;
+        private CancellationToken token;
 
         private Socket socket;
         private string address;
@@ -24,12 +26,19 @@ namespace FAPS
 
         private CommandTransceiver cmdTrans = new CommandTransceiver();
 
-        public DataServerHandler(Middleman _monitor, Scheduler _scheduler, string _address, int _port)
+        public DataServerHandler(Middleman _monitor, Scheduler _scheduler, CancellationToken _token, string _address, int _port)
         {
             monitor = _monitor;
             scheduler = _scheduler;
+            token = _token;
             address = _address;
             port = _port;
+        }
+
+
+        public Task startService()
+        {
+            return Task.Factory.StartNew(run, token);
         }
 
         // ZROBCIE COS Z TYM
