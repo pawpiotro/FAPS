@@ -35,10 +35,61 @@ namespace FAPS
             port = _port;
         }
 
-
-        public Task startService()
+        private void CancelAsync()
         {
-            return Task.Factory.StartNew(run, token);
+            Console.WriteLine("SERVER HANDLER CANCEL");
+            try
+            {
+                socket.Shutdown(SocketShutdown.Both);
+                socket.Close();
+            }
+            catch (SocketException se)
+            {
+                Console.WriteLine(se.ToString());
+            }
+        }
+
+        public void startService()
+        {
+            if (!connect())
+                Console.WriteLine("Login to Data Server Failed");
+            else
+            {
+                Console.WriteLine("Logged in to data server");
+                Task.Factory.StartNew(runSender, token);
+                Task.Factory.StartNew(runReceiver, token);
+            }
+        }
+
+        private bool connect()
+        {
+            Console.WriteLine("DATASERVER: " + address + ":" + port);
+
+            IPAddress ipAddress = IPAddress.Parse(address);
+            IPEndPoint remoteEP = new IPEndPoint(ipAddress, port);
+
+            //Console.WriteLine(address + ":" + port);
+
+            socket = new Socket(AddressFamily.InterNetwork,
+                SocketType.Stream, ProtocolType.Tcp);
+
+            try
+            {
+                socket.Connect(remoteEP);
+                Console.WriteLine("Socket connected to {0}",
+                            socket.RemoteEndPoint.ToString());
+                return logIn();
+            }
+            catch (SocketException se)
+            {
+                Console.WriteLine("SocketException : {0}", se.ToString());
+                return false;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Unexpected exception : {0}", e.ToString());
+                return false;
+            }
         }
 
         // ZROBCIE COS Z TYM
@@ -52,6 +103,86 @@ namespace FAPS
                 return true;
             else
                 return false;
+        }
+
+        private void runSender()
+        {
+            CancellationTokenRegistration ctr = token.Register(CancelAsync);
+
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    waitForSch();
+                    switch (state)
+                    {
+                        case State.download:
+                            // Here goes download
+                            Console.WriteLine("Download");
+                            state = State.idle;
+                            break;
+                        case State.upload:
+                            // Here goes upload
+                            Console.WriteLine("Upload");
+                            state = State.idle;
+                            break;
+                        case State.other:
+                            // Here goes command send
+                            Console.WriteLine("Wysyłam");
+                            cmdTrans.sendCmd(socket, cmd);
+                            state = State.idle;
+                            cmd = null;
+                            break;
+                    }
+                }
+                catch (SocketException se)
+                {
+                    Console.WriteLine("SocketException : {0}", se.ToString());
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Connection with Data Server closed");
+                    break;
+                }
+            }
+            if (socket.Connected)
+            {
+                socket.Shutdown(SocketShutdown.Both);
+                socket.Close();
+            }
+            Console.WriteLine("Server handler sender thread has ended");
+        }
+
+        private void runReceiver()
+        {
+            CancellationTokenRegistration ctr = token.Register(CancelAsync);
+
+            Command cmd = new Command();
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    cmd = cmdTrans.getCmd(socket, null);
+                    Console.WriteLine("Received code: " + cmd.nCode);
+                    //cmdProc.processCommand(cmd);
+                }
+                catch (SocketException se)
+                {
+                    Console.WriteLine(se.ToString());
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Connection with Data Server closed");
+                    break;
+                }
+            }
+
+            if (socket.Connected)
+            {
+                socket.Shutdown(SocketShutdown.Both);
+                socket.Close();
+            }
+            Console.WriteLine("Server handler receiver thread has ended");
         }
 
         public bool addDownload(string file, int frag)
@@ -92,7 +223,7 @@ namespace FAPS
             }
         }
 
-        private bool waitForSch()
+        private void waitForSch()
         {
             lock (cmdLock)
             {
@@ -103,72 +234,7 @@ namespace FAPS
                 Console.WriteLine("DSH working");
                 Console.WriteLine(state);
                 //cmd = null;
-                return true;
             }
         }
-
-        public void run()
-        {
-
-            Console.WriteLine("DATASERVER: " + address + ":" + port);
-            
-            IPAddress ipAddress = IPAddress.Parse(address);
-            IPEndPoint remoteEP = new IPEndPoint(ipAddress, port);
-
-            //Console.WriteLine(address + ":" + port);
-
-            socket = new Socket(AddressFamily.InterNetwork,
-                SocketType.Stream, ProtocolType.Tcp);
-
-            try
-            {
-                socket.Connect(remoteEP);
-                Console.WriteLine("Socket connected to {0}",
-                    socket.RemoteEndPoint.ToString());
-
-                //send LOGIN
-                if (logIn())
-                {
-                    Console.WriteLine("Logged in to data server");
-                    while (waitForSch())
-                    {
-                        switch (state)
-                        {
-                            case State.download:
-                                // Here goes download
-                                Console.WriteLine("Download");
-                                state = State.idle;
-                                break;
-                            case State.upload:
-                                // Here goes upload
-                                Console.WriteLine("Upload");
-                                state = State.idle;
-                                break;
-                            case State.other:
-                                // Here goes command send
-                                Console.WriteLine("Wysyłam");
-                                cmdTrans.sendCmd(socket, cmd);
-                                state = State.idle;
-                                cmd = null;
-                                break;
-                        }
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Login failed");
-                }
-            }
-
-            catch (SocketException se)
-            {
-                Console.WriteLine("SocketException : {0}", se.ToString());
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Unexpected exception : {0}", e.ToString());
-            }
-        }
-
     }
 }
