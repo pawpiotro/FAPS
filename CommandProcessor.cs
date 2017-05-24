@@ -21,11 +21,13 @@ namespace FAPS
                             LOGIN(cmd);
                             break;
                         case Command.CMD.ERROR:
+                            ERROR();
                             break;
                         case Command.CMD.EXIT:
                             EXIT();
                             break;
                         default:
+                            ERROR();
                             break;
                     }
                     break;
@@ -50,11 +52,13 @@ namespace FAPS
                             clientSession.Monitor.queueMisc(cmd);
                             break;
                         case Command.CMD.ERROR:
+                            ERROR();
                             break;
                         case Command.CMD.EXIT:
                             EXIT();
                             break;
                         default:
+                            ERROR();
                             break;
                     }
                     break;
@@ -63,13 +67,16 @@ namespace FAPS
                     switch ((Command.CMD)cmd.nCode)
                     {
                         case Command.CMD.ACCEPT:
+                            ACCEPT();
                             break;
                         case Command.CMD.ERROR:
+                            ERROR();
                             break;
                         case Command.CMD.EXIT:
                             EXIT();
                             break;
                         default:
+                            ERROR();
                             break;
                     }
                     break;
@@ -146,6 +153,17 @@ namespace FAPS
 
         private void EXIT()
         {
+            clientSession.State = ClientSession.STATE.stop;
+        }
+
+        private void ACCEPT()
+        {
+            clientSession.State = ClientSession.STATE.idle;
+        }
+
+        private void ERROR()
+        {
+            Console.WriteLine("Connection failed");
             clientSession.State = ClientSession.STATE.stop;
         }
 

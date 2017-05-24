@@ -62,7 +62,7 @@ namespace FAPS
                 }
                 catch (SocketException se)
                 {
-                    Console.WriteLine(se.ToString());
+                    //Console.WriteLine(se.ToString());
                 }
                 catch(Exception e)
                 {

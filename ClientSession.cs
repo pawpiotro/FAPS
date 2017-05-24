@@ -8,12 +8,11 @@ namespace FAPS
     class ClientSession
     {
         private string id;
-        public enum STATE { unauthenticated, waitForAccept, accepted, idle, working, stop };
+        public enum STATE { unauthenticated, waitForAccept, idle, working, stop };
         private Middleman monitor;
         private BlockingCollection<Command> toSend = new BlockingCollection<Command>();
-
         public string ID
-        {
+        { 
             get { return id; }
             set { id = value; }
         }
