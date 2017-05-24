@@ -44,7 +44,7 @@ namespace FAPS
         // ZROBCIE COS Z TYM
         private bool logIn()
         {
-            string s = "user1:pass1";
+            string s = "user2:pass1";
             Command tcmd = new Command(Command.CMD.LOGIN, s);
             cmdTrans.sendCmd(socket, tcmd);
             tcmd = cmdTrans.getCmd(socket, null);
@@ -100,8 +100,9 @@ namespace FAPS
                 {
                     Monitor.Wait(cmdLock);
                 }
+                Console.WriteLine("DSH working");
                 Console.WriteLine(state);
-                cmd = null;
+                //cmd = null;
                 return true;
             }
         }
@@ -110,7 +111,7 @@ namespace FAPS
         {
 
             Console.WriteLine("DATASERVER: " + address + ":" + port);
-            /*
+            
             IPAddress ipAddress = IPAddress.Parse(address);
             IPEndPoint remoteEP = new IPEndPoint(ipAddress, port);
 
@@ -123,7 +124,7 @@ namespace FAPS
             {
                 socket.Connect(remoteEP);
                 Console.WriteLine("Socket connected to {0}",
-                    socket.RemoteEndPoint.Tostring());
+                    socket.RemoteEndPoint.ToString());
 
                 //send LOGIN
                 if (logIn())
@@ -145,8 +146,10 @@ namespace FAPS
                                 break;
                             case State.other:
                                 // Here goes command send
-                                Console.WriteLine("Command");
+                                Console.WriteLine("Wysyłam");
+                                cmdTrans.sendCmd(socket, cmd);
                                 state = State.idle;
+                                cmd = null;
                                 break;
                         }
                     }
@@ -159,12 +162,12 @@ namespace FAPS
 
             catch (SocketException se)
             {
-                Console.WriteLine("SocketException : {0}", se.Totring());
+                Console.WriteLine("SocketException : {0}", se.ToString());
             }
             catch (Exception e)
             {
                 Console.WriteLine("Unexpected exception : {0}", e.ToString());
-            }*/
+            }
         }
 
     }

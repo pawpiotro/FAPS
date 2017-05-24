@@ -101,7 +101,7 @@ namespace FAPS
         public Command(CMD c, String d)
         {
             eCode = c;
-            nSize = IPAddress.HostToNetworkOrder(d.Length);
+            nSize = d.Length;
             data = Encoding.ASCII.GetBytes(d);
             id = null;
         }
