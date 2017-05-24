@@ -78,6 +78,7 @@ namespace FAPS
         
         public static int Main(String[] args)
         {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
             if (args.Length >= 2)
             {
                 

@@ -63,6 +63,8 @@ namespace FAPS
                 }
                 catch (SocketException se)
                 {
+                    if (se.ErrorCode.Equals(10054))
+                        break;
                     //Console.WriteLine(se.ToString());
                 }
                 catch(Exception e)
@@ -96,7 +98,8 @@ namespace FAPS
                 }
                 catch (SocketException se)
                 {
-                    Console.WriteLine(se.ToString());
+                    if (se.ErrorCode.Equals(10054))
+                        break;
                 }
                 catch (Exception e)
                 {

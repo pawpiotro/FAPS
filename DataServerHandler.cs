@@ -95,7 +95,7 @@ namespace FAPS
         // ZROBCIE COS Z TYM
         private bool logIn()
         {
-            string s = "user2:pass1";
+            string s = "żołądź:pass1";
             Command tcmd = new Command(Command.CMD.LOGIN, s);
             cmdTrans.sendCmd(socket, tcmd);
             tcmd = cmdTrans.getCmd(socket, null);
@@ -137,7 +137,8 @@ namespace FAPS
                 }
                 catch (SocketException se)
                 {
-                    Console.WriteLine("SocketException : {0}", se.ToString());
+                    if (se.ErrorCode.Equals(10054))
+                        break;
                 }
                 catch (Exception e)
                 {
@@ -168,7 +169,8 @@ namespace FAPS
                 }
                 catch (SocketException se)
                 {
-                    Console.WriteLine(se.ToString());
+                    if (se.ErrorCode.Equals(10054))
+                        break;
                 }
                 catch (Exception e)
                 {

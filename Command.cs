@@ -54,8 +54,8 @@ namespace FAPS
 
         public string sData
         {
-            get { return Encoding.ASCII.GetString(data); }
-            set { data = Encoding.ASCII.GetBytes(value); }
+            get { return Encoding.UTF8.GetString(data); }
+            set { data = Encoding.UTF8.GetBytes(value); }
         }
 
         public string ID
@@ -102,7 +102,7 @@ namespace FAPS
         {
             eCode = c;
             nSize = d.Length;
-            data = Encoding.ASCII.GetBytes(d);
+            data = Encoding.UTF8.GetBytes(d);
             id = null;
         }
 
