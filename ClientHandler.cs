@@ -13,7 +13,7 @@ namespace FAPS
         private CancellationToken token;
         private ClientSession clientSession;
 
-        private CommandTransceiver cmdTrans = new CommandTransceiver();
+        private CommandTransceiver cmdTrans;
         private CommandProcessor cmdProc;
 
 
@@ -24,6 +24,7 @@ namespace FAPS
             cts = _cts;
             token = cts.Token;
             clientSession = new ClientSession(monitor);
+            cmdTrans = new CommandTransceiver(socket, null);
             cmdProc = new CommandProcessor(clientSession);
         }
         
@@ -57,7 +58,7 @@ namespace FAPS
             {
                 try
                 { 
-                    cmd = cmdTrans.getCmd(socket, clientSession.ID);
+                    cmd = cmdTrans.getCmd();
                     Console.WriteLine("CH: Received code: " + cmd.nCode);
                     cmdProc.processCommand(cmd);
                 }
@@ -94,7 +95,7 @@ namespace FAPS
                 {
                     cmd = clientSession.ToSend.Take(token);
                     Console.WriteLine("Sent code: " + cmd.nCode);
-                    cmdTrans.sendCmd(socket, cmd);
+                    cmdTrans.sendCmd(cmd);
                 }
                 catch (SocketException se)
                 {

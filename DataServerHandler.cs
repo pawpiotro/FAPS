@@ -24,7 +24,7 @@ namespace FAPS
         private enum State {download, upload, other, idle};
         private State state = State.idle;
 
-        private CommandTransceiver cmdTrans = new CommandTransceiver();
+        private CommandTransceiver cmdTrans;
 
         public DataServerHandler(Middleman _monitor, Scheduler _scheduler, CancellationToken _token, string _address, int _port)
         {
@@ -33,6 +33,7 @@ namespace FAPS
             token = _token;
             address = _address;
             port = _port;
+            cmdTrans = new CommandTransceiver(socket, null);
         }
 
         private void CancelAsync()
@@ -97,8 +98,8 @@ namespace FAPS
         {
             string s = "żołądź:pass1";
             Command tcmd = new Command(Command.CMD.LOGIN, s);
-            cmdTrans.sendCmd(socket, tcmd);
-            tcmd = cmdTrans.getCmd(socket, null);
+            cmdTrans.sendCmd(tcmd);
+            tcmd = cmdTrans.getCmd();
             if (tcmd.eCode.Equals(Command.CMD.ACCEPT))
                 return true;
             else
@@ -129,7 +130,7 @@ namespace FAPS
                         case State.other:
                             // Here goes command send
                             Console.WriteLine("Wysyłam");
-                            cmdTrans.sendCmd(socket, cmd);
+                            cmdTrans.sendCmd(cmd);
                             state = State.idle;
                             cmd = null;
                             break;
@@ -163,7 +164,7 @@ namespace FAPS
             {
                 try
                 {
-                    cmd = cmdTrans.getCmd(socket, null);
+                    cmd = cmdTrans.getCmd();
                     Console.WriteLine("Received code: " + cmd.nCode);
                     //cmdProc.processCommand(cmd);
                 }

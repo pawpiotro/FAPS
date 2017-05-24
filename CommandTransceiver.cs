@@ -6,11 +6,25 @@ namespace FAPS
 {
     class CommandTransceiver
     {
+        private Socket socket;
+        private String id;
 
-        public Command getCmd(Socket socket, String _id)
+        public String ID
+        {
+            get { return id; }
+            set { id = value; }
+        }
+
+        public CommandTransceiver(Socket _socket, String _id)
+        {
+            socket = _socket;
+            id = _id;
+        }
+
+        public Command getCmd()
         {
             Command cmd = new Command();
-            cmd.ID = _id;
+            cmd.ID = id;
             socket.ReceiveTimeout = 3000;
             try
             {
@@ -44,7 +58,7 @@ namespace FAPS
             }
         }
 
-        public void sendCmd(Socket socket, Command cmd)
+        public void sendCmd(Command cmd)
         {
             try
             {

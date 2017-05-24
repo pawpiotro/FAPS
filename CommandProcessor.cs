@@ -34,6 +34,8 @@ namespace FAPS
                 case ClientSession.STATE.idle:
                     switch ((Command.CMD)cmd.nCode)
                     {
+                        case Command.CMD.ACCEPT:
+                            break;
                         case Command.CMD.LIST:
                             clientSession.Monitor.queueMisc(cmd);
                             break;
