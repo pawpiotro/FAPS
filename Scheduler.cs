@@ -92,7 +92,7 @@ namespace FAPS
             
             while(!token.IsCancellationRequested)
             {
-                if (!dwnloading && monitor.dlReady())
+                /*if (!dwnloading && monitor.dlReady())
                 {
                     // Someone's waiting for a download, start dl
                     dwnloading = true;
@@ -148,10 +148,13 @@ namespace FAPS
                     Command cmd = monitor.cmdFetch();
                     /*if (cmd = FILELIST)     // Get the list from one server (since they all share same files)
                         Command(monitor.cmdfetch(), ServerList[0]);
-                    else*/
+                    else
                         foreach (DataServerHandler server in serverList)      // rename, delete etc - pass to all servers
                             command(cmd, server);
-                }
+                }*/
+                Command cmd = monitor.Fetch();
+                foreach (DataServerHandler server in serverList)      // rename, delete etc - pass to all servers
+                    command(cmd, server);
             }
         }
     }
