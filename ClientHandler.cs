@@ -9,7 +9,6 @@ namespace FAPS
     {
         private Middleman monitor;
         private Socket socket;
-        private bool readyToSend = true;
         private CancellationToken token;
 
 

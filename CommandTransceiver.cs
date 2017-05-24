@@ -11,6 +11,7 @@ namespace FAPS
         {
             Command cmd = new Command();
             cmd.ID = _id;
+            socket.ReceiveTimeout = 10000;
             try
             {
                 int rec = socket.Receive(cmd.Code);
