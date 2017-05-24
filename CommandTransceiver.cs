@@ -48,10 +48,12 @@ namespace FAPS
         {
             try
             {
-                socket.Send(cmd.Code);
+                int sent = socket.Send(cmd.Code);
+                if (sent.Equals(0))
+                    throw new Exception();
                 if (cmd.needMoreData())
                 {
-                    int sent = 0;
+                    sent = 0;
                     cmd.nSize = IPAddress.HostToNetworkOrder(cmd.nSize);
                     do
                     {

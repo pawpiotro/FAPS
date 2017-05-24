@@ -36,15 +36,18 @@ namespace FAPS
 
         public void CancelAsync()
         {
-            Console.WriteLine("CLIENT HANDLER CANCEL");
+            Console.WriteLine("CH: CLIENT HANDLER CANCEL");
             try
             {
-                socket.Shutdown(SocketShutdown.Both);
-                socket.Close();
+                if (socket.Connected)
+                {
+                    socket.Shutdown(SocketShutdown.Both);
+                    socket.Close();
+                }
             } catch(SocketException se)
             {
                 Console.WriteLine(se.ToString());
-            }
+            } //catch(ObjectDisposedException ode)
         }
 
         public void runReceiver()
@@ -57,7 +60,7 @@ namespace FAPS
                 try
                 { 
                     cmd = cmdTrans.getCmd(socket, clientSession.ID);
-                    Console.WriteLine("Received code: " + cmd.nCode);
+                    Console.WriteLine("CH: Received code: " + cmd.nCode);
                     cmdProc.processCommand(cmd);
                 }
                 catch (SocketException se)
@@ -66,7 +69,7 @@ namespace FAPS
                 }
                 catch(Exception e)
                 {
-                    Console.WriteLine("Connection with client closed");
+                    Console.WriteLine("CH: Connection with client closed");
                     break;
                 }
             }
@@ -76,7 +79,8 @@ namespace FAPS
                 socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
             }
-            Console.WriteLine("Client handler thread has ended");
+            ctr.Dispose();
+            Console.WriteLine("CH: Client handler thread has ended");
         }
 
         public void runSender()
@@ -108,6 +112,7 @@ namespace FAPS
                 socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
             }
+            ctr.Dispose();
             Console.WriteLine("Client handler sender thread has ended");
         }
 

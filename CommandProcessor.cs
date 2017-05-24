@@ -133,21 +133,21 @@ namespace FAPS
 
         private void LOGIN(Command cmd)
         {
-            Console.WriteLine("logging in...");
+            Console.WriteLine("CH: logging in...");
             char[] separators = { ':' };
             String[] tmp = cmd.sData.Split(separators);
-            Console.WriteLine("Login: {0} Pass: {1}", tmp[0], tmp[1]);
+            Console.WriteLine("CH: Login: {0} Pass: {1}", tmp[0], tmp[1]);
             clientSession.authenticate(tmp[0], tmp[1]);
             if(clientSession.State.Equals(ClientSession.STATE.idle))
             {
-                Console.WriteLine("Login successful");
+                Console.WriteLine("CH: Login successful");
                 clientSession.ID = tmp[0];
                 Command ctmp = new Command(Command.CMD.ACCEPT);
                 clientSession.ToSend.Add(ctmp);
             }
             else
             {
-                Console.WriteLine("Login failed");
+                Console.WriteLine("CH: Login failed");
             }
         }
 
@@ -163,7 +163,7 @@ namespace FAPS
 
         private void ERROR()
         {
-            Console.WriteLine("Connection failed");
+            Console.WriteLine("CH: Connection failed");
             clientSession.State = ClientSession.STATE.stop;
         }
 

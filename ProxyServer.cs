@@ -15,13 +15,13 @@ namespace FAPS
 
         private static void changePort()
         {
-            /*
+            
             ctsListener.Cancel();  //stop service
-            //get new address and port from console
-            listener.Address = new_address;
+            Console.WriteLine("new port:");
+            String new_port = Console.ReadLine();
             listener.Port = new_port;
             listener.startService();
-            */
+            
         }
         private static void doSmth()        // TEMP
         {
