@@ -51,6 +51,7 @@ namespace FAPS
                     {
                         ctsListener.Cancel();
                         ctsScheduler.Cancel();
+                        ctsMiddleman.Cancel();
                         Environment.Exit(0);    // TEMP
                     }
                     switch (num)
@@ -95,6 +96,7 @@ namespace FAPS
 
             ctsListener.Dispose();
             ctsScheduler.Dispose();
+            ctsMiddleman.Dispose();
             Console.WriteLine("\nPress ENTER to exit...");
             Console.Read();
             return 0;

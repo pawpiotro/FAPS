@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 
@@ -9,7 +10,7 @@ namespace FAPS
         private string id;
         public enum STATE { unauthenticated, waitForAccept, accepted, idle, working, stop };
         private Middleman monitor;
-        private Queue<Command> toSend = new Queue<Command>();
+        private BlockingCollection<Command> toSend = new BlockingCollection<Command>();
 
         public string ID
         {
@@ -29,12 +30,11 @@ namespace FAPS
             set { monitor = value; }
         }
 
-        public Queue<Command> ToSend
+        public BlockingCollection<Command> ToSend
         {
             get { return toSend; }
             set { toSend = value; }
         }
-
 
         private STATE state = STATE.unauthenticated;
 

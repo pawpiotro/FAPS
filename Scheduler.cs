@@ -21,7 +21,6 @@ namespace FAPS
         {
             monitor = _monitor;
             token = _token;
-            monitor.print();
             dwnloading = false;
 
             connectToServers();

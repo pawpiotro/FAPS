@@ -136,7 +136,7 @@ namespace FAPS
                 Console.WriteLine("Login successful");
                 clientSession.ID = tmp[0];
                 Command ctmp = new Command(Command.CMD.ACCEPT);
-                clientSession.ToSend.Enqueue(ctmp);
+                clientSession.ToSend.Add(ctmp);
             }
             else
             {

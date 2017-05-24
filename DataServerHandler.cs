@@ -100,9 +100,6 @@ namespace FAPS
         public void run()
         {
 
-            monitor.inc();
-            monitor.print();
-
             Console.WriteLine("DATASERVER: " + address + ":" + port);
             /*
             IPAddress ipAddress = IPAddress.Parse(address);
