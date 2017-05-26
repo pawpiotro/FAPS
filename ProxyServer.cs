@@ -85,10 +85,7 @@ namespace FAPS
                 monitor = new Middleman(ctsMiddleman.Token);
 
                 //scheduler = new Scheduler(monitor, ctsScheduler.Token);
-                //scheduler.startService();
-
                 listener = new Listener(args[0], args[1], monitor, ctsListener.Token);
-                listener.startService();
 
                 menu();
 

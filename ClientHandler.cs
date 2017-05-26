@@ -7,11 +7,9 @@ namespace FAPS
 {
     class ClientHandler
     {
-        private Middleman monitor;
         private Socket socket;
         private CancellationTokenSource cts;
         private CancellationToken token;
-        private ClientSession clientSession;
 
         private CommandTransceiver cmdTrans;
         private CommandProcessor cmdProc;
@@ -20,15 +18,15 @@ namespace FAPS
         public ClientHandler(Middleman _monitor, Socket _socket, CancellationTokenSource _cts)
         {
             socket = _socket;
-            monitor = _monitor;
             cts = _cts;
             token = cts.Token;
-            clientSession = new ClientSession(monitor);
-            cmdTrans = new CommandTransceiver(socket, null);
-            cmdProc = new CommandProcessor(clientSession);
+            cmdTrans = new CommandTransceiver(socket);
+            cmdProc = new CommandProcessor(_monitor, cts);
+
+            startThread();
         }
         
-        public void startThread()
+        private void startThread()
         {
             Task.Factory.StartNew(runReceiver, token);
             Task.Factory.StartNew(runSender, token);
@@ -54,13 +52,13 @@ namespace FAPS
         {
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
             Command cmd = new Command();
-            while (!token.IsCancellationRequested && !(clientSession.State.Equals(ClientSession.STATE.stop)))
+            while (!token.IsCancellationRequested)
             {
                 try
                 { 
                     cmd = cmdTrans.getCmd();
                     Console.WriteLine("CH: Received code: " + cmd.nCode);
-                    cmdProc.processCommand(cmd);
+                    cmdProc.Incoming.Add(cmd);
                 }
                 catch (SocketException se)
                 {
@@ -81,7 +79,7 @@ namespace FAPS
                 socket.Close();
             }
             ctr.Dispose();
-            Console.WriteLine("CH: Client handler thread has ended");
+            Console.WriteLine("CH: Client handler receiver thread has ended");
         }
 
         public void runSender()
@@ -89,11 +87,11 @@ namespace FAPS
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
 
             Command cmd = new Command();
-            while (!token.IsCancellationRequested && !(clientSession.State.Equals(ClientSession.STATE.stop)))
+            while (!token.IsCancellationRequested)
             {
                 try
                 {
-                    cmd = clientSession.ToSend.Take(token);
+                    cmd = cmdProc.ToSend.Take(token);
                     Console.WriteLine("Sent code: " + cmd.nCode);
                     cmdTrans.sendCmd(cmd);
                 }

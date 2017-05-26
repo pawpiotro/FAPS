@@ -33,7 +33,7 @@ namespace FAPS
             token = _token;
             address = _address;
             port = _port;
-            cmdTrans = new CommandTransceiver(socket, null);
+            cmdTrans = new CommandTransceiver(socket);
         }
 
         private void CancelAsync()

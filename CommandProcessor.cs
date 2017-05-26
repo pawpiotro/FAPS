@@ -1,172 +1,173 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace FAPS
 {
     class CommandProcessor
     {
-        ClientSession clientSession;
-        public CommandProcessor(ClientSession cs)
+        private CancellationTokenSource cts;
+        private CancellationToken token;
+        private BlockingCollection<Command> incoming = new BlockingCollection<Command>();
+        private BlockingCollection<Command> toSend = new BlockingCollection<Command>();
+        private Middleman monitor;
+        private String id;
+
+        public BlockingCollection<Command> ToSend
         {
-            clientSession = cs; 
+            get { return toSend; }
+            set { toSend = value; }
         }
 
-        public void processCommand(Command cmd)
+        public BlockingCollection<Command> Incoming
         {
-            switch (clientSession.State)
+            get { return incoming; }
+            set { incoming = value; }
+        }
+
+        public String ID
+        {
+            get { return id; }
+            set { id = value; }
+        }
+
+        public CommandProcessor(Middleman _monitor, CancellationTokenSource _cts)
+        {
+            monitor = _monitor;
+            cts = _cts;
+            token = cts.Token;
+
+            startThread();
+        }
+
+        private void startThread()
+        {
+            Task.Factory.StartNew(run, token);
+        }
+
+        private void run()
+        {
+            Command cmd = null;
+            do
             {
-                case ClientSession.STATE.unauthenticated:
-                    switch ((Command.CMD)cmd.nCode)
-                    {
-                        case Command.CMD.LOGIN:
-                            LOGIN(cmd);
-                            break;
-                        case Command.CMD.ERROR:
-                            ERROR();
-                            break;
-                        case Command.CMD.EXIT:
-                            EXIT();
-                            break;
-                        default:
-                            ERROR();
-                            break;
-                    }
-                    break;
-                case ClientSession.STATE.idle:
-                    switch ((Command.CMD)cmd.nCode)
-                    {
-                        case Command.CMD.ACCEPT:
-                            break;
-                        case Command.CMD.LIST:
-                            clientSession.Monitor.queueMisc(cmd);
-                            break;
-                        case Command.CMD.DOWNLOAD:
-                            clientSession.Monitor.queueDownload(cmd);
-                            break;
-                        case Command.CMD.UPLOAD:
-                            clientSession.Monitor.queueUpload(cmd);
-                            break;
-                        case Command.CMD.CHUNK:
-                            break;
-                        case Command.CMD.DELETE:
-                            clientSession.Monitor.queueMisc(cmd);
-                            break;
-                        case Command.CMD.RENAME:
-                            clientSession.Monitor.queueMisc(cmd);
-                            break;
-                        case Command.CMD.ERROR:
-                            ERROR();
-                            break;
-                        case Command.CMD.EXIT:
-                            EXIT();
-                            break;
-                        default:
-                            ERROR();
-                            break;
-                    }
-                    break;
-
-                case ClientSession.STATE.waitForAccept:
-                    switch ((Command.CMD)cmd.nCode)
-                    {
-                        case Command.CMD.ACCEPT:
-                            ACCEPT();
-                            break;
-                        case Command.CMD.ERROR:
-                            ERROR();
-                            break;
-                        case Command.CMD.EXIT:
-                            EXIT();
-                            break;
-                        default:
-                            ERROR();
-                            break;
-                    }
-                    break;
+                try
+                {
+                    cmd = incoming.Take(token);
+                }
+                catch (OperationCanceledException oce)
+                {
+                    //
+                }
+            } while (!logIn(cmd));
+            // LOGGED IN
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    cmd = incoming.Take(token);
+                    processCommand(cmd);
+                }
+                catch (OperationCanceledException oce)
+                {
+                    //
+                }
             }
+        }
+        
 
-
-
-            /*
+        private void processCommand(Command cmd)
+        {
             switch ((Command.CMD)cmd.nCode)
             {
-                case Command.CMD.INTRODUCE:
-                    break;
-                case Command.CMD.LOGIN:
-                    if(clientSession.State.Equals(ClientSession.STATE.unauthenticated))
-                        LOGIN(cmd);
-                    break;
                 case Command.CMD.LIST:
-                    clientSession.Monitor.queueMisc(cmd);
+                    monitor.queueMisc(cmd);
                     break;
                 case Command.CMD.DOWNLOAD:
-                    clientSession.Monitor.queueDownload(cmd);
+                    monitor.queueDownload(cmd);
                     break;
                 case Command.CMD.UPLOAD:
-                    clientSession.Monitor.queueUpload(cmd);
-                    break;
-                case Command.CMD.ACCEPT:
-                    if (clientSession.State.Equals(ClientSession.STATE.waitForAccept))
-                        clientSession.State = ClientSession.STATE.accepted;
+                    monitor.queueUpload(cmd);
                     break;
                 case Command.CMD.CHUNK:
                     break;
                 case Command.CMD.DELETE:
-                    clientSession.Monitor.queueMisc(cmd);
+                    monitor.queueMisc(cmd);
                     break;
                 case Command.CMD.RENAME:
-                    clientSession.Monitor.queueMisc(cmd);
-                    break;
-                case Command.CMD.COMMIT:
-                    break;
-                case Command.CMD.ROLLBACK:
-                    break;
-                case Command.CMD.COMMITRDY:
-                    break;
-                case Command.CMD.COMMITACK:
+                    monitor.queueMisc(cmd);
                     break;
                 case Command.CMD.ERROR:
+                    ERROR();
                     break;
                 case Command.CMD.EXIT:
+                    EXIT();
                     break;
                 default:
                     break;
-            }*/
+            }
         }
 
-        private void LOGIN(Command cmd)
+        private bool logIn(Command cmd)
         {
-            Console.WriteLine("CH: logging in...");
-            char[] separators = { ':' };
-            String[] tmp = cmd.sData.Split(separators);
-            Console.WriteLine("CH: Login: {0} Pass: {1}", tmp[0], tmp[1]);
-            clientSession.authenticate(tmp[0], tmp[1]);
-            if(clientSession.State.Equals(ClientSession.STATE.idle))
+            try
             {
-                Console.WriteLine("CH: Login successful");
-                clientSession.ID = tmp[0];
-                Command ctmp = new Command(Command.CMD.ACCEPT);
-                clientSession.ToSend.Add(ctmp);
+                Console.WriteLine("CH: logging in...");
+                char[] separators = { ':' };
+                String[] tmp = cmd.sData.Split(separators);
+                Console.WriteLine("CH: Login: {0} Pass: {1}", tmp[0], tmp[1]);
+                if (authenticate(tmp[0], tmp[1]))
+                {
+                    Console.WriteLine("CH: Login successful");
+                    ID = tmp[0];
+                    Command ctmp = new Command(Command.CMD.ACCEPT);
+                    ToSend.Add(ctmp);
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine("CH: Login failed");
+                    return false;
+                }
             }
+            catch (NullReferenceException)
+            {
+                return false;
+            }
+          
+        }
+
+        public bool authenticate(String login, String pass)
+        {
+            var list = new List<Tuple<String, String>>();
+            String[] result;
+            String[] separators = { ";" };
+            using (StreamReader fs = new StreamReader("pass.txt"))
+            {
+                String line = null;
+                while ((line = fs.ReadLine()) != null)
+                {
+                    result = line.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+                    list.Add(Tuple.Create<String, String>(result[0], result[1]));
+                }
+            }
+            if (list.Contains(Tuple.Create<String, String>(login, pass)))
+                return true;
             else
-            {
-                Console.WriteLine("CH: Login failed");
-            }
+                return false;
         }
 
         private void EXIT()
         {
-            clientSession.State = ClientSession.STATE.stop;
-        }
-
-        private void ACCEPT()
-        {
-            clientSession.State = ClientSession.STATE.idle;
+            cts.Cancel();
         }
 
         private void ERROR()
         {
-            Console.WriteLine("CH: Connection failed");
-            clientSession.State = ClientSession.STATE.stop;
+            Console.WriteLine("CH: ERROR");
+            cts.Cancel();
         }
 
    

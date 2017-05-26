@@ -25,6 +25,8 @@ namespace FAPS
             port = _port;
             monitor = _monitor;
             token = _token;
+
+            startService();
         }
 
         public string Address
@@ -39,9 +41,9 @@ namespace FAPS
             set { port = value; }
         }
 
-        public Task startService()
+        public void startService()
         {
-            return Task.Factory.StartNew(StartListening, token);
+            Task.Factory.StartNew(StartListening, token);
         }
 
         public void CancelAsync()
@@ -73,7 +75,7 @@ namespace FAPS
             }
         }
 
-        public void StartListening()
+        private void StartListening()
         {
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
             try
@@ -100,7 +102,6 @@ namespace FAPS
                         CancellationTokenSource cts = new CancellationTokenSource();
                         chtokens.Add(cts);
                         ClientHandler client = new ClientHandler(monitor, handler, cts);
-                        client.startThread();
 
                     }
                     catch (SocketException e1)

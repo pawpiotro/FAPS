@@ -23,9 +23,10 @@ namespace FAPS
             token = _token;
             dwnloading = false;
 
+            startService();
         }
 
-        public Task startService()
+        private Task startService()
         {
             return Task.Factory.StartNew(run, token);
         }
