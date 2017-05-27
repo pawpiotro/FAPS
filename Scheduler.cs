@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using FAPS.Commands;
 
 namespace FAPS
 {
@@ -68,17 +69,17 @@ namespace FAPS
             succFrags[fragment] = true;
         }
 
-        private void download(NetworkFrame file, int fragment, DataServerHandler server)
+        private void download(Command file, int fragment, DataServerHandler server)
         {
             //create ServerHandler(download, file, fragment, this, sever)
         }
 
-        private void upload(NetworkFrame file, DataServerHandler server)
+        private void upload(Command file, DataServerHandler server)
         {
             //create ServerHandler(upload, file, this)
         }
 
-        private void NetworkFrame(NetworkFrame cmd, DataServerHandler server)
+        private void command(Command cmd, DataServerHandler server)
         {
                 server.addCmd(cmd);
         }
@@ -153,9 +154,9 @@ namespace FAPS
                         foreach (DataServerHandler server in serverList)      // rename, delete etc - pass to all servers
                             NetworkFrame(cmd, server);
                 }*/
-                NetworkFrame cmd = monitor.Fetch();
+                Command cmd = monitor.Fetch();
                 foreach (DataServerHandler server in serverList)      // rename, delete etc - pass to all servers
-                    NetworkFrame(cmd, server);
+                    command(cmd, server);
             }
         }
     }

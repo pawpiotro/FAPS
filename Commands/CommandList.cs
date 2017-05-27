@@ -1,13 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FAPS.Commands
 {
     class CommandList:Command
     {
-        public override NetworkFrame toNetworkFrame() { return null; }
+        private String user;
+
+        public String User { get { return user; } set { user = value; } }
+
+        public CommandList(NetworkFrame nf) : base(nf)
+        {
+            user = nf.sData;
+        }
+
+        public override NetworkFrame toNetworkFrame()
+        {
+            return new NetworkFrame(NetworkFrame.CMD.LIST, user);
+        }
     }
 }

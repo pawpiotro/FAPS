@@ -1,13 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FAPS.Commands
+﻿namespace FAPS.Commands
 {
     class CommandChunk:Command
     {
-        public override NetworkFrame toNetworkFrame() { return null; }
+        private byte[] data;
+
+        public byte[] Data
+        {
+            get { return data; }
+            set { data = value; }
+        }
+
+        public CommandChunk(NetworkFrame nf) : base(nf)
+        {
+            data = nf.Data;
+        }
+
+        public override NetworkFrame toNetworkFrame()
+        {
+            return new NetworkFrame(NetworkFrame.CMD.CHUNK, data);
+        }
     }
 }

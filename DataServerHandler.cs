@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using FAPS.Commands;
 
 namespace FAPS
 {
@@ -19,12 +20,12 @@ namespace FAPS
 
         private bool readyToSend = true;
         public bool busy = false;
-        private NetworkFrame cmd = null;     // current?
+        private Command cmd = null;     // current?
         private static object cmdLock = new object();
         private enum State {download, upload, other, idle};
         private State state = State.idle;
 
-        private NetworkFrameTransceiver cmdTrans;
+        private CommandTransceiver cmdTrans;
 
         public DataServerHandler(Middleman _monitor, Scheduler _scheduler, CancellationToken _token, string _address, int _port)
         {
@@ -80,7 +81,7 @@ namespace FAPS
                 Console.WriteLine("Socket connected to {0}",
                             socket.RemoteEndPoint.ToString());
 
-                cmdTrans = new NetworkFrameTransceiver(socket);
+                cmdTrans = new CommandTransceiver(socket);
                 return logIn();
             }
             catch (SocketException se)
@@ -98,11 +99,12 @@ namespace FAPS
         // ZROBCIE COS Z TYM
         private bool logIn()
         {
-            string s = "żołądź:pass1";
-            NetworkFrame tcmd = new NetworkFrame(NetworkFrame.CMD.LOGIN, s);
+            string user = "żołądź";
+            string pass = "pass1";
+            Command tcmd = new CommandLogin(user, pass);
             cmdTrans.sendCmd(tcmd);
             tcmd = cmdTrans.getCmd();
-            if (tcmd.eCode.Equals(NetworkFrame.CMD.ACCEPT))
+            if (cmd.GetType().Equals(typeof(CommandLogin)))
                 return true;
             else
                 return false;
@@ -130,7 +132,7 @@ namespace FAPS
                             state = State.idle;
                             break;
                         case State.other:
-                            // Here goes NetworkFrame send
+                            // Here goes Command send
                             Console.WriteLine("Wysyłam");
                             cmdTrans.sendCmd(cmd);
                             state = State.idle;
@@ -161,14 +163,14 @@ namespace FAPS
         {
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
 
-            NetworkFrame cmd = new NetworkFrame();
+            Command cmd;
             while (!token.IsCancellationRequested)
             {
                 try
                 {
                     cmd = cmdTrans.getCmd();
-                    Console.WriteLine("Received code: " + cmd.nCode);
-                    //cmdProc.processNetworkFrame(cmd);
+                    Console.WriteLine("Received command: " + cmd.GetType());
+                    //cmdProc.processCommand(cmd);
                 }
                 catch (SocketException se)
                 {
@@ -208,7 +210,7 @@ namespace FAPS
                 return true;
             }
         }
-        public bool addCmd(NetworkFrame _cmd)
+        public bool addCmd(Command _cmd)
         {
             lock (cmdLock)
             {

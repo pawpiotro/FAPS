@@ -1,13 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net;
 
 namespace FAPS.Commands
 {
     class CommandError:Command
     {
-        public override NetworkFrame toNetworkFrame() { return null; }
+        private int errorCode;
+        public int ErrorCode
+        {
+            get { return errorCode; }
+            set { errorCode = value; }
+        }
+
+        public CommandError(NetworkFrame nf) : base(nf)
+        {
+            byte[] tmp = nf.Data;
+            errorCode = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(tmp,0));
+        }
+
+        public override NetworkFrame toNetworkFrame()
+        {
+            byte[] tmp = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(errorCode));
+            return new NetworkFrame(NetworkFrame.CMD.ERROR, tmp);
+        }
     }
 }

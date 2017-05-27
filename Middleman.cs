@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
+using FAPS.Commands;
 
 namespace FAPS
 {
@@ -9,36 +10,36 @@ namespace FAPS
         private CancellationToken token;
 
         /*
-        private BlockingCollection<NetworkFrame> uploadQueue = new BlockingCollection<NetworkFrame>();
-        private BlockingCollection<NetworkFrame> downloadQueue = new BlockingCollection<NetworkFrame>();
-        private BlockingCollection<NetworkFrame> miscQueue = new BlockingCollection<NetworkFrame>();
+        private BlockingCollection<Command> uploadQueue = new BlockingCollection<Command>();
+        private BlockingCollection<Command> downloadQueue = new BlockingCollection<Command>();
+        private BlockingCollection<Command> miscQueue = new BlockingCollection<Command>();
         */
-        private BlockingCollection<NetworkFrame> Queue = new BlockingCollection<NetworkFrame>();
+        private BlockingCollection<Command> Queue = new BlockingCollection<Command>();
 
         public Middleman(CancellationToken _token)
         {
             token = _token;
         }
 
-        public void queueMisc(NetworkFrame cmd)
+        public void queueMisc(Command cmd)
         {
                 //miscQueue.Add(cmd, token);
             Queue.Add(cmd, token);
         }
 
-        public void queueUpload(NetworkFrame cmd)
+        public void queueUpload(Command cmd)
         {
                 //uploadQueue.Add(cmd, token);
             Queue.Add(cmd, token);
         }
 
-        public void queueDownload(NetworkFrame cmd)
+        public void queueDownload(Command cmd)
         {
                 //downloadQueue.Add(cmd, token);
             Queue.Add(cmd, token);
         }
 
-        // Is there file waiting to download/upload/NetworkFrame?
+        // Is there file waiting to download/upload/Command?
         /*public bool dlReady()
         {
                 if (downloadQueue.Count == 0)
@@ -68,33 +69,33 @@ namespace FAPS
                 return true;
         }
 
-        // Get file/NetworkFrame waiting
-        /*public NetworkFrame dlFetch()
+        // Get file/Command waiting
+        /*public Command dlFetch()
         {
             return downloadQueue.Take(token);
         }
-        public NetworkFrame ulFetch()
+        public Command ulFetch()
         {
             return uploadQueue.Take(token);
         }
-        public NetworkFrame cmdFetch()
+        public Command cmdFetch()
         {
             return miscQueue.Take(token);
         }*/
-        public NetworkFrame Fetch()
+        public Command Fetch()
         {
             return Queue.Take(token);
         }
         /*
-        public NetworkFrame dlTryFetch()
+        public Command dlTryFetch()
         {
             return downloadQueue.TryTake(token, 500);
         }
-        public NetworkFrame ulTryFetch()
+        public Command ulTryFetch()
         {
             return uploadQueue.TryTake(token, 500);
         }
-        public NetworkFrame cmdTryFetch()
+        public Command cmdTryFetch()
         {
             return miscQueue.TryTake(token, 500);
         }*/

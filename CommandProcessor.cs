@@ -4,25 +4,26 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using FAPS.Commands;
 
 namespace FAPS
 {
-    class NetworkFrameProcessor
+    class CommandProcessor
     {
         private CancellationTokenSource cts;
         private CancellationToken token;
-        private BlockingCollection<NetworkFrame> incoming = new BlockingCollection<NetworkFrame>();
-        private BlockingCollection<NetworkFrame> toSend = new BlockingCollection<NetworkFrame>();
+        private BlockingCollection<Command> incoming = new BlockingCollection<Command>();
+        private BlockingCollection<Command> toSend = new BlockingCollection<Command>();
         private Middleman monitor;
         private String id;
 
-        public BlockingCollection<NetworkFrame> ToSend
+        public BlockingCollection<Command> ToSend
         {
             get { return toSend; }
             set { toSend = value; }
         }
 
-        public BlockingCollection<NetworkFrame> Incoming
+        public BlockingCollection<Command> Incoming
         {
             get { return incoming; }
             set { incoming = value; }
@@ -34,7 +35,7 @@ namespace FAPS
             set { id = value; }
         }
 
-        public NetworkFrameProcessor(Middleman _monitor, CancellationTokenSource _cts)
+        public CommandProcessor(Middleman _monitor, CancellationTokenSource _cts)
         {
             monitor = _monitor;
             cts = _cts;
@@ -50,25 +51,30 @@ namespace FAPS
 
         private void run()
         {
-            NetworkFrame cmd = null;
+            Command cmd = null;
             do
             {
                 try
                 {
                     cmd = incoming.Take(token);
+                    if (!(cmd.GetType().Equals(typeof(CommandLogin))))
+                    {
+                        Console.WriteLine("CH: Unexpected command");
+                        continue;
+                    }
                 }
                 catch (OperationCanceledException oce)
                 {
-                    //
+                    break;//
                 }
-            } while (!logIn(cmd));
+            } while (!logIn((CommandLogin)cmd));
             // LOGGED IN
             while (!token.IsCancellationRequested)
             {
                 try
                 {
                     cmd = incoming.Take(token);
-                    processNetworkFrame(cmd);
+                    processCommand(cmd);
                 }
                 catch (OperationCanceledException oce)
                 {
@@ -78,51 +84,61 @@ namespace FAPS
         }
         
 
-        private void processNetworkFrame(NetworkFrame cmd)
+        private void processCommand(Command cmd)
         {
-            switch ((NetworkFrame.CMD)cmd.nCode)
+            if (cmd.GetType().Equals(typeof(CommandList)))
             {
-                case NetworkFrame.CMD.LIST:
-                    monitor.queueMisc(cmd);
-                    break;
-                case NetworkFrame.CMD.DOWNLOAD:
-                    monitor.queueDownload(cmd);
-                    break;
-                case NetworkFrame.CMD.UPLOAD:
-                    monitor.queueUpload(cmd);
-                    break;
-                case NetworkFrame.CMD.CHUNK:
-                    break;
-                case NetworkFrame.CMD.DELETE:
-                    monitor.queueMisc(cmd);
-                    break;
-                case NetworkFrame.CMD.RENAME:
-                    monitor.queueMisc(cmd);
-                    break;
-                case NetworkFrame.CMD.ERROR:
-                    ERROR();
-                    break;
-                case NetworkFrame.CMD.EXIT:
-                    EXIT();
-                    break;
-                default:
-                    break;
+                monitor.queueMisc(cmd);
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandDownload)))
+            {
+                monitor.queueDownload(cmd);
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandUpload)))
+            {
+                monitor.queueUpload(cmd);
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandRename)))
+            {
+                monitor.queueMisc(cmd);
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandDelete)))
+            {
+                monitor.queueMisc(cmd);
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandChunk)))
+            {
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandError)))
+            {
+                Console.WriteLine("CH: ERROR: " + ((CommandError)cmd).ErrorCode);
+                cts.Cancel();
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandExit)))
+            {
+                cts.Cancel();
+                return;
             }
         }
 
-        private bool logIn(NetworkFrame cmd)
-        {
+        private bool logIn(CommandLogin cmd)
+        {            
             try
             {
                 Console.WriteLine("CH: logging in...");
-                char[] separators = { ':' };
-                String[] tmp = cmd.sData.Split(separators);
-                Console.WriteLine("CH: Login: {0} Pass: {1}", tmp[0], tmp[1]);
-                if (authenticate(tmp[0], tmp[1]))
+                Console.WriteLine("CH: Login: {0} Pass: {1}", cmd.User, cmd.Pass);
+                if (authenticate(cmd.User, cmd.Pass))
                 {
                     Console.WriteLine("CH: Login successful");
-                    ID = tmp[0];
-                    NetworkFrame ctmp = new NetworkFrame(NetworkFrame.CMD.ACCEPT);
+                    ID = cmd.User;
+                    Command ctmp = new CommandAccept();
                     ToSend.Add(ctmp);
                     return true;
                 }
@@ -132,14 +148,9 @@ namespace FAPS
                     return false;
                 }
             }
-            catch (NullReferenceException nre)
+            catch (Exception)
             {
-                Console.WriteLine("CH: Unexpected command");
-                return false;
-            }
-            catch(IndexOutOfRangeException ioore)
-            {
-                Console.WriteLine("CH: Unexpected command");
+                Console.WriteLine("CH: COMMAND LOGIN BUILD: FAILED");
                 return false;
             }
           

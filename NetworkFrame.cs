@@ -98,6 +98,13 @@ namespace FAPS
             id = null;
         }
 
+        public NetworkFrame(CMD c, byte[] d)
+        {
+            eCode = c;
+            nSize = d.Length;
+            data = d;
+        }
+
         public NetworkFrame(CMD c, String d)
         {
             eCode = c;
@@ -107,6 +114,7 @@ namespace FAPS
         }
 
         // Other methods
+
         public bool needMoreData()
         {
             if (needMoreDataCmds.Contains<byte>(code[0]))

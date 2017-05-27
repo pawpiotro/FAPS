@@ -2,6 +2,7 @@
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using FAPS.Commands;
 
 namespace FAPS
 {
@@ -11,8 +12,8 @@ namespace FAPS
         private CancellationTokenSource cts;
         private CancellationToken token;
 
-        private NetworkFrameTransceiver cmdTrans;
-        private NetworkFrameProcessor cmdProc;
+        private CommandTransceiver cmdTrans;
+        private CommandProcessor cmdProc;
 
 
         public ClientHandler(Middleman _monitor, Socket _socket, CancellationTokenSource _cts)
@@ -20,8 +21,8 @@ namespace FAPS
             socket = _socket;
             cts = _cts;
             token = cts.Token;
-            cmdTrans = new NetworkFrameTransceiver(socket);
-            cmdProc = new NetworkFrameProcessor(_monitor, cts);
+            cmdTrans = new CommandTransceiver(socket);
+            cmdProc = new CommandProcessor(_monitor, cts);
 
             startThread();
         }
@@ -51,14 +52,17 @@ namespace FAPS
         public void runReceiver()
         {
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
-            NetworkFrame cmd = new NetworkFrame();
+            Command cmd;
             while (!token.IsCancellationRequested)
             {
                 try
                 { 
                     cmd = cmdTrans.getCmd();
-                    Console.WriteLine("CH: Received code: " + cmd.nCode);
-                    cmdProc.Incoming.Add(cmd);
+                    if (!cmd.Equals(null))
+                    {
+                        Console.WriteLine("CH: Received command: " + cmd.GetType());
+                        cmdProc.Incoming.Add(cmd);
+                    }
                 }
                 catch (SocketException se)
                 {
@@ -68,7 +72,7 @@ namespace FAPS
                 }
                 catch(Exception e)
                 {
-                    Console.WriteLine("CH: Connection with client closed");
+                    Console.WriteLine("CH: Receiver: Connection with client closed");
                     break;
                 }
             }
@@ -78,21 +82,23 @@ namespace FAPS
                 socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
             }
+            if(!token.IsCancellationRequested)
+                cts.Cancel();
             ctr.Dispose();
-            Console.WriteLine("CH: Client handler receiver thread has ended");
+            Console.WriteLine("CH: Receiver: Client handler thread has ended");
         }
 
         public void runSender()
         {
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
 
-            NetworkFrame cmd = new NetworkFrame();
+            Command cmd;
             while (!token.IsCancellationRequested)
             {
                 try
                 {
                     cmd = cmdProc.ToSend.Take(token);
-                    Console.WriteLine("Sent code: " + cmd.nCode);
+                    Console.WriteLine("Sent command: " + cmd.GetType());
                     cmdTrans.sendCmd(cmd);
                 }
                 catch (SocketException se)
@@ -102,7 +108,7 @@ namespace FAPS
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Connection with client closed");
+                    Console.WriteLine("CH: Sender: Connection with client closed");
                     break;
                 }
             }
@@ -112,8 +118,10 @@ namespace FAPS
                 socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
             }
+            if (!token.IsCancellationRequested)
+                cts.Cancel();
             ctr.Dispose();
-            Console.WriteLine("Client handler sender thread has ended");
+            Console.WriteLine("CH: Sender: Client handler thread has ended");
         }
 
     }

@@ -1,13 +1,38 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FAPS.Commands
 {
     class CommandDelete:Command
     {
-        public override NetworkFrame toNetworkFrame() { return null; }
+        private String filename;
+        private String user;
+
+        public String Filename { get { return filename; } set { filename = value; } }
+        public String User { get { return user; } set { user = value; } }
+
+        public CommandDelete(NetworkFrame nf) : base(nf)
+        {
+            try
+            {
+                char[] separators = { ':' };
+                String[] tmp = nf.sData.Split(separators);
+                filename = tmp[0];
+                user = tmp[1];
+            }
+            catch (NullReferenceException)
+            {
+                throw new Exception();
+            }
+            catch (IndexOutOfRangeException)
+            {
+                throw new Exception();
+            }
+        }
+
+        public override NetworkFrame toNetworkFrame()
+        {
+            String data = filename + ":" + user;
+            return new NetworkFrame(NetworkFrame.CMD.DELETE, data);
+        }
     }
 }
