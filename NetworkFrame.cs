@@ -5,9 +5,9 @@ using System.Text;
 
 namespace FAPS
 {
-    class Command
+    class NetworkFrame
     {
-        private String id;      //whose command is this
+        private String id;      //whose NetworkFrame is this
 
         private byte[] code = new byte[1];
         private byte[] size = new byte[4];
@@ -87,18 +87,18 @@ namespace FAPS
         }
 
         // Constructors
-        public Command()
+        public NetworkFrame()
         {
             id = null;
         }
 
-        public Command(CMD c)
+        public NetworkFrame(CMD c)
         {
             eCode = c;
             id = null;
         }
 
-        public Command(CMD c, String d)
+        public NetworkFrame(CMD c, String d)
         {
             eCode = c;
             nSize = d.Length;

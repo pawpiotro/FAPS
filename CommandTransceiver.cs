@@ -4,19 +4,19 @@ using System.Net.Sockets;
 
 namespace FAPS
 {
-    class CommandTransceiver
+    class NetworkFrameTransceiver
     {
         private Socket socket;
 
 
-        public CommandTransceiver(Socket _socket)
+        public NetworkFrameTransceiver(Socket _socket)
         {
             socket = _socket;
         }
 
-        public Command getCmd()
+        public NetworkFrame getCmd()
         {
-            Command cmd = new Command();
+            NetworkFrame cmd = new NetworkFrame();
             socket.ReceiveTimeout = 10000;
             try
             {
@@ -50,7 +50,7 @@ namespace FAPS
             }
         }
 
-        public void sendCmd(Command cmd)
+        public void sendCmd(NetworkFrame cmd)
         {
             try
             {

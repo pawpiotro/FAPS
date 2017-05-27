@@ -45,7 +45,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClientHandler.cs" />
-    <Compile Include="Command.cs" />
+    <Compile Include="Commands\Command.cs" />
+    <Compile Include="Commands\CommandAccept.cs" />
+    <Compile Include="Commands\CommandChunk.cs" />
+    <Compile Include="Commands\CommandDelete.cs" />
+    <Compile Include="Commands\CommandDownload.cs" />
+    <Compile Include="Commands\CommandError.cs" />
+    <Compile Include="Commands\CommandExit.cs" />
+    <Compile Include="Commands\CommandList.cs" />
+    <Compile Include="Commands\CommandLogin.cs" />
+    <Compile Include="Commands\CommandRename.cs" />
+    <Compile Include="Commands\CommandUpload.cs" />
+    <Compile Include="NetworkFrame.cs" />
     <Compile Include="CommandProcessor.cs" />
     <Compile Include="CommandTransceiver.cs" />
     <Compile Include="DataServerHandler.cs" />

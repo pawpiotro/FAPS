@@ -14,7 +14,7 @@ namespace FAPS
         private int lastFrag, maxFrag;
         private Queue <int> failedFrags;
         private List <bool> succFrags;
-        private Command dlFile;
+        private NetworkFrame dlFile;
         private CancellationToken token;
 
         public Scheduler(Middleman _monitor, CancellationToken _token)
@@ -68,17 +68,17 @@ namespace FAPS
             succFrags[fragment] = true;
         }
 
-        private void download(Command file, int fragment, DataServerHandler server)
+        private void download(NetworkFrame file, int fragment, DataServerHandler server)
         {
             //create ServerHandler(download, file, fragment, this, sever)
         }
 
-        private void upload(Command file, DataServerHandler server)
+        private void upload(NetworkFrame file, DataServerHandler server)
         {
             //create ServerHandler(upload, file, this)
         }
 
-        private void command(Command cmd, DataServerHandler server)
+        private void NetworkFrame(NetworkFrame cmd, DataServerHandler server)
         {
                 server.addCmd(cmd);
         }
@@ -140,22 +140,22 @@ namespace FAPS
                 if (monitor.ulReady())
                 {
                     // Upload file on every server;
-                    Command ulFile = monitor.ulFetch();
+                    NetworkFrame ulFile = monitor.ulFetch();
                     foreach (DataServerHandler server in serverList)
                         upload(ulFile, server);
                 }
                 if (monitor.cmdReady())
                 {
-                    Command cmd = monitor.cmdFetch();
+                    NetworkFrame cmd = monitor.cmdFetch();
                     /*if (cmd = FILELIST)     // Get the list from one server (since they all share same files)
-                        Command(monitor.cmdfetch(), ServerList[0]);
+                        NetworkFrame(monitor.cmdfetch(), ServerList[0]);
                     else
                         foreach (DataServerHandler server in serverList)      // rename, delete etc - pass to all servers
-                            command(cmd, server);
+                            NetworkFrame(cmd, server);
                 }*/
-                Command cmd = monitor.Fetch();
+                NetworkFrame cmd = monitor.Fetch();
                 foreach (DataServerHandler server in serverList)      // rename, delete etc - pass to all servers
-                    command(cmd, server);
+                    NetworkFrame(cmd, server);
             }
         }
     }

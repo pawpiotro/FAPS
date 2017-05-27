@@ -9,36 +9,36 @@ namespace FAPS
         private CancellationToken token;
 
         /*
-        private BlockingCollection<Command> uploadQueue = new BlockingCollection<Command>();
-        private BlockingCollection<Command> downloadQueue = new BlockingCollection<Command>();
-        private BlockingCollection<Command> miscQueue = new BlockingCollection<Command>();
+        private BlockingCollection<NetworkFrame> uploadQueue = new BlockingCollection<NetworkFrame>();
+        private BlockingCollection<NetworkFrame> downloadQueue = new BlockingCollection<NetworkFrame>();
+        private BlockingCollection<NetworkFrame> miscQueue = new BlockingCollection<NetworkFrame>();
         */
-        private BlockingCollection<Command> Queue = new BlockingCollection<Command>();
+        private BlockingCollection<NetworkFrame> Queue = new BlockingCollection<NetworkFrame>();
 
         public Middleman(CancellationToken _token)
         {
             token = _token;
         }
 
-        public void queueMisc(Command cmd)
+        public void queueMisc(NetworkFrame cmd)
         {
                 //miscQueue.Add(cmd, token);
             Queue.Add(cmd, token);
         }
 
-        public void queueUpload(Command cmd)
+        public void queueUpload(NetworkFrame cmd)
         {
                 //uploadQueue.Add(cmd, token);
             Queue.Add(cmd, token);
         }
 
-        public void queueDownload(Command cmd)
+        public void queueDownload(NetworkFrame cmd)
         {
                 //downloadQueue.Add(cmd, token);
             Queue.Add(cmd, token);
         }
 
-        // Is there file waiting to download/upload/command?
+        // Is there file waiting to download/upload/NetworkFrame?
         /*public bool dlReady()
         {
                 if (downloadQueue.Count == 0)
@@ -68,33 +68,33 @@ namespace FAPS
                 return true;
         }
 
-        // Get file/command waiting
-        /*public Command dlFetch()
+        // Get file/NetworkFrame waiting
+        /*public NetworkFrame dlFetch()
         {
             return downloadQueue.Take(token);
         }
-        public Command ulFetch()
+        public NetworkFrame ulFetch()
         {
             return uploadQueue.Take(token);
         }
-        public Command cmdFetch()
+        public NetworkFrame cmdFetch()
         {
             return miscQueue.Take(token);
         }*/
-        public Command Fetch()
+        public NetworkFrame Fetch()
         {
             return Queue.Take(token);
         }
         /*
-        public Command dlTryFetch()
+        public NetworkFrame dlTryFetch()
         {
             return downloadQueue.TryTake(token, 500);
         }
-        public Command ulTryFetch()
+        public NetworkFrame ulTryFetch()
         {
             return uploadQueue.TryTake(token, 500);
         }
-        public Command cmdTryFetch()
+        public NetworkFrame cmdTryFetch()
         {
             return miscQueue.TryTake(token, 500);
         }*/

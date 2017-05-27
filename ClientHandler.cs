@@ -11,8 +11,8 @@ namespace FAPS
         private CancellationTokenSource cts;
         private CancellationToken token;
 
-        private CommandTransceiver cmdTrans;
-        private CommandProcessor cmdProc;
+        private NetworkFrameTransceiver cmdTrans;
+        private NetworkFrameProcessor cmdProc;
 
 
         public ClientHandler(Middleman _monitor, Socket _socket, CancellationTokenSource _cts)
@@ -20,8 +20,8 @@ namespace FAPS
             socket = _socket;
             cts = _cts;
             token = cts.Token;
-            cmdTrans = new CommandTransceiver(socket);
-            cmdProc = new CommandProcessor(_monitor, cts);
+            cmdTrans = new NetworkFrameTransceiver(socket);
+            cmdProc = new NetworkFrameProcessor(_monitor, cts);
 
             startThread();
         }
@@ -51,7 +51,7 @@ namespace FAPS
         public void runReceiver()
         {
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
-            Command cmd = new Command();
+            NetworkFrame cmd = new NetworkFrame();
             while (!token.IsCancellationRequested)
             {
                 try
@@ -86,7 +86,7 @@ namespace FAPS
         {
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
 
-            Command cmd = new Command();
+            NetworkFrame cmd = new NetworkFrame();
             while (!token.IsCancellationRequested)
             {
                 try

@@ -7,22 +7,22 @@ using System.Threading.Tasks;
 
 namespace FAPS
 {
-    class CommandProcessor
+    class NetworkFrameProcessor
     {
         private CancellationTokenSource cts;
         private CancellationToken token;
-        private BlockingCollection<Command> incoming = new BlockingCollection<Command>();
-        private BlockingCollection<Command> toSend = new BlockingCollection<Command>();
+        private BlockingCollection<NetworkFrame> incoming = new BlockingCollection<NetworkFrame>();
+        private BlockingCollection<NetworkFrame> toSend = new BlockingCollection<NetworkFrame>();
         private Middleman monitor;
         private String id;
 
-        public BlockingCollection<Command> ToSend
+        public BlockingCollection<NetworkFrame> ToSend
         {
             get { return toSend; }
             set { toSend = value; }
         }
 
-        public BlockingCollection<Command> Incoming
+        public BlockingCollection<NetworkFrame> Incoming
         {
             get { return incoming; }
             set { incoming = value; }
@@ -34,7 +34,7 @@ namespace FAPS
             set { id = value; }
         }
 
-        public CommandProcessor(Middleman _monitor, CancellationTokenSource _cts)
+        public NetworkFrameProcessor(Middleman _monitor, CancellationTokenSource _cts)
         {
             monitor = _monitor;
             cts = _cts;
@@ -50,7 +50,7 @@ namespace FAPS
 
         private void run()
         {
-            Command cmd = null;
+            NetworkFrame cmd = null;
             do
             {
                 try
@@ -68,7 +68,7 @@ namespace FAPS
                 try
                 {
                     cmd = incoming.Take(token);
-                    processCommand(cmd);
+                    processNetworkFrame(cmd);
                 }
                 catch (OperationCanceledException oce)
                 {
@@ -78,31 +78,31 @@ namespace FAPS
         }
         
 
-        private void processCommand(Command cmd)
+        private void processNetworkFrame(NetworkFrame cmd)
         {
-            switch ((Command.CMD)cmd.nCode)
+            switch ((NetworkFrame.CMD)cmd.nCode)
             {
-                case Command.CMD.LIST:
+                case NetworkFrame.CMD.LIST:
                     monitor.queueMisc(cmd);
                     break;
-                case Command.CMD.DOWNLOAD:
+                case NetworkFrame.CMD.DOWNLOAD:
                     monitor.queueDownload(cmd);
                     break;
-                case Command.CMD.UPLOAD:
+                case NetworkFrame.CMD.UPLOAD:
                     monitor.queueUpload(cmd);
                     break;
-                case Command.CMD.CHUNK:
+                case NetworkFrame.CMD.CHUNK:
                     break;
-                case Command.CMD.DELETE:
+                case NetworkFrame.CMD.DELETE:
                     monitor.queueMisc(cmd);
                     break;
-                case Command.CMD.RENAME:
+                case NetworkFrame.CMD.RENAME:
                     monitor.queueMisc(cmd);
                     break;
-                case Command.CMD.ERROR:
+                case NetworkFrame.CMD.ERROR:
                     ERROR();
                     break;
-                case Command.CMD.EXIT:
+                case NetworkFrame.CMD.EXIT:
                     EXIT();
                     break;
                 default:
@@ -110,7 +110,7 @@ namespace FAPS
             }
         }
 
-        private bool logIn(Command cmd)
+        private bool logIn(NetworkFrame cmd)
         {
             try
             {
@@ -122,7 +122,7 @@ namespace FAPS
                 {
                     Console.WriteLine("CH: Login successful");
                     ID = tmp[0];
-                    Command ctmp = new Command(Command.CMD.ACCEPT);
+                    NetworkFrame ctmp = new NetworkFrame(NetworkFrame.CMD.ACCEPT);
                     ToSend.Add(ctmp);
                     return true;
                 }
@@ -132,8 +132,14 @@ namespace FAPS
                     return false;
                 }
             }
-            catch (NullReferenceException)
+            catch (NullReferenceException nre)
             {
+                Console.WriteLine("CH: Unexpected command");
+                return false;
+            }
+            catch(IndexOutOfRangeException ioore)
+            {
+                Console.WriteLine("CH: Unexpected command");
                 return false;
             }
           
