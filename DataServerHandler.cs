@@ -99,12 +99,12 @@ namespace FAPS
         // ZROBCIE COS Z TYM
         private bool logIn()
         {
-            string user = "żołądź";
+            string user = "user2";
             string pass = "pass1";
             Command tcmd = new CommandLogin(user, pass);
             cmdTrans.sendCmd(tcmd);
             tcmd = cmdTrans.getCmd();
-            if (cmd.GetType().Equals(typeof(CommandLogin)))
+            if (tcmd.GetType().Equals(typeof(CommandAccept)))
                 return true;
             else
                 return false;
