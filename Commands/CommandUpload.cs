@@ -9,10 +9,12 @@ namespace FAPS.Commands
         private long size;
         private String filename;
         private String user;
+        private CommandProcessor cmdProc;
 
         public long Size { get { return size; } set { size = value; } }
         public String User { get { return user; } set { user = value; } }
         public String Filename { get { return filename; } set { filename = value; } }
+        public CommandProcessor CmdProc { get { return cmdProc; } set { cmdProc = value; } }
 
         public CommandUpload(NetworkFrame nf) : base(nf)
         {

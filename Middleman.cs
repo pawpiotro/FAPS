@@ -15,6 +15,20 @@ namespace FAPS
         private BlockingCollection<Command> miscQueue = new BlockingCollection<Command>();
         */
         private BlockingCollection<Command> Queue = new BlockingCollection<Command>();
+        private BlockingCollection<Command> uploadChunkQueue = new BlockingCollection<Command>();
+        private BlockingCollection<Command> downloadChunkQueue = new BlockingCollection<Command>();
+
+        public BlockingCollection<Command> UploadChunkQueue
+        {
+            get { return uploadChunkQueue; }
+            set { uploadChunkQueue = value; }
+        }
+
+        public BlockingCollection<Command> DownloadChunkQueue
+        {
+            get { return downloadChunkQueue; }
+            set { downloadChunkQueue = value; }
+        }
 
         public Middleman(CancellationToken _token)
         {

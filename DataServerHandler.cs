@@ -81,7 +81,7 @@ namespace FAPS
                 Console.WriteLine("Socket connected to {0}",
                             socket.RemoteEndPoint.ToString());
 
-                cmdTrans = new CommandTransceiver(socket);
+                cmdTrans = new CommandTransceiver(socket, false);
                 return logIn();
             }
             catch (SocketException se)
@@ -95,8 +95,7 @@ namespace FAPS
                 return false;
             }
         }
-
-        // ZROBCIE COS Z TYM
+        
         private bool logIn()
         {
             string user = "user2";
@@ -170,7 +169,6 @@ namespace FAPS
                 {
                     cmd = cmdTrans.getCmd();
                     Console.WriteLine("Received command: " + cmd.GetType());
-                    //cmdProc.processCommand(cmd);
                 }
                 catch (SocketException se)
                 {

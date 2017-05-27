@@ -21,7 +21,7 @@ namespace FAPS
             socket = _socket;
             cts = _cts;
             token = cts.Token;
-            cmdTrans = new CommandTransceiver(socket);
+            cmdTrans = new CommandTransceiver(socket, true);
             cmdProc = new CommandProcessor(_monitor, cts);
 
             startThread();

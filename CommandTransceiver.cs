@@ -8,11 +8,12 @@ namespace FAPS
     class CommandTransceiver
     {
         private Socket socket;
+        private bool fromClient;
 
-
-        public CommandTransceiver(Socket _socket)
+        public CommandTransceiver(Socket _socket, bool _fromClient)
         {
             socket = _socket;
+            fromClient = _fromClient;
         }
 
         private NetworkFrame receiveNetworkFrame()
@@ -71,7 +72,7 @@ namespace FAPS
                     case NetworkFrame.CMD.UPLOAD:
                         return new CommandUpload(nf);
                     case NetworkFrame.CMD.CHUNK:
-                        return new CommandChunk(nf);
+                        return new CommandChunk(nf, fromClient);
                     case NetworkFrame.CMD.DELETE:
                         return new CommandDelete(nf);
                     case NetworkFrame.CMD.RENAME:

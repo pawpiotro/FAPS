@@ -3,6 +3,13 @@
     class CommandChunk:Command
     {
         private byte[] data;
+        private bool sentByClient;
+
+        public bool SentByClient
+        {
+            get { return sentByClient; }
+            set { sentByClient = value; }
+        }
 
         public byte[] Data
         {
@@ -10,9 +17,10 @@
             set { data = value; }
         }
 
-        public CommandChunk(NetworkFrame nf) : base(nf)
+        public CommandChunk(NetworkFrame nf, bool _sentByClient) : base(nf)
         {
             data = nf.Data;
+            sentByClient = _sentByClient;
         }
 
         public override NetworkFrame toNetworkFrame()

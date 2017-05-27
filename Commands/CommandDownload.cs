@@ -10,11 +10,13 @@ namespace FAPS.Commands
         private int end;
         private String filename;
         private String user;
+        private CommandProcessor cmdProc;
 
         public int Begin{ get { return begin; } set { begin = value; } }
         public int End { get { return end; } set { end = value; } }
         public String User { get { return user; } set { user = value; } }
         public String Filename { get { return filename; } set { filename = value; } }
+        public CommandProcessor CmdProc { get { return cmdProc; } set { cmdProc = value; } }
 
         public CommandDownload(NetworkFrame nf) : base(nf)
         {

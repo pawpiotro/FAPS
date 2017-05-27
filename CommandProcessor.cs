@@ -93,11 +93,13 @@ namespace FAPS
             }
             if (cmd.GetType().Equals(typeof(CommandDownload)))
             {
+                ((CommandDownload)cmd).CmdProc = this;
                 monitor.queueDownload(cmd);
                 return;
             }
             if (cmd.GetType().Equals(typeof(CommandUpload)))
             {
+                ((CommandUpload)cmd).CmdProc = this;
                 monitor.queueUpload(cmd);
                 return;
             }
@@ -113,6 +115,10 @@ namespace FAPS
             }
             if (cmd.GetType().Equals(typeof(CommandChunk)))
             {
+                if (((CommandChunk)cmd).SentByClient)
+                    monitor.UploadChunkQueue.Add(cmd);
+                else
+                    toSend.Add(cmd);
                 return;
             }
             if (cmd.GetType().Equals(typeof(CommandError)))
