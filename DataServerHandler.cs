@@ -20,9 +20,9 @@ namespace FAPS
 
         private bool readyToSend = true;
         public bool busy = false;
-        private Command cmd = null;     // current?
+        private Command cmd = null;
         private static object cmdLock = new object();
-        public enum States {download, upload, other, idle};
+        public enum States {download, dwnwait, upload, uplwait, other, idle};
         private States state = States.idle;
 
         public States State { get { return state; } }
@@ -60,7 +60,7 @@ namespace FAPS
             {
                 Console.WriteLine("Logged in to data server");
                 Task.Factory.StartNew(runSender, token);
-                Task.Factory.StartNew(runReceiver, token);
+                //Task.Factory.StartNew(runReceiver, token);
             }
         }
 
@@ -124,17 +124,15 @@ namespace FAPS
                     {
                         case States.download:
                             // Here goes download
-                            Console.WriteLine("Download");
+                            startDownload();
                             state = States.idle;
                             break;
                         case States.upload:
                             // Here goes upload
-                            Console.WriteLine("Upload");
                             state = States.idle;
                             break;
                         case States.other:
                             // Here goes Command send
-                            Console.WriteLine("Wysyłam");
                             cmdTrans.sendCmd(cmd);
                             state = States.idle;
                             cmd = null;
@@ -143,11 +141,15 @@ namespace FAPS
                 }
                 catch (SocketException se)
                 {
+                    if (state == States.download)
+                        scheduler.addFailed((CommandDownload) cmd);
                     if (se.ErrorCode.Equals(10054))
                         break;
                 }
                 catch (Exception e)
                 {
+                    if (state == States.download)
+                        scheduler.addFailed((CommandDownload)cmd);
                     Console.WriteLine("Connection with Data Server closed");
                     break;
                 }
@@ -220,13 +222,23 @@ namespace FAPS
                 return true;
             }
         }
-
-        public bool send(string file)   // BETA MAYBE USELESS
+        
+        private void startDownload()
         {
-            lock (cmdLock)
+            CommandDownload dwn = new CommandDownload((CommandDownload)cmd);
+            cmdTrans.sendCmd(cmd);
+            //state = States.dwnwait;
+            Command recvd = cmdTrans.getCmd();
+            if (recvd.GetType().Equals(typeof(CommandChunk)))
             {
-                readyToSend = true;
-                return true;
+                // Pass the chunk
+                dwn.CmdProc.Incoming.Add(recvd, token);
+                scheduler.success(dwn.Begin / scheduler.FragSize);
+            }
+            else
+            {
+                Console.WriteLine("DSH: Unexpected server response: " + recvd.GetType());
+                scheduler.addFailed((CommandDownload) cmd);
             }
         }
 
