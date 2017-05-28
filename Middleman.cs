@@ -15,16 +15,16 @@ namespace FAPS
         private BlockingCollection<Command> miscQueue = new BlockingCollection<Command>();
         */
         private BlockingCollection<Command> Queue = new BlockingCollection<Command>();
-        private BlockingCollection<Command> uploadChunkQueue = new BlockingCollection<Command>();
-        private BlockingCollection<Command> downloadChunkQueue = new BlockingCollection<Command>();
+        private BlockingCollection<CommandChunk> uploadChunkQueue = new BlockingCollection<CommandChunk>();
+        private BlockingCollection<CommandChunk> downloadChunkQueue = new BlockingCollection<CommandChunk>();
 
-        public BlockingCollection<Command> UploadChunkQueue
+        public BlockingCollection<CommandChunk> UploadChunkQueue
         {
             get { return uploadChunkQueue; }
             set { uploadChunkQueue = value; }
         }
 
-        public BlockingCollection<Command> DownloadChunkQueue
+        public BlockingCollection<CommandChunk> DownloadChunkQueue
         {
             get { return downloadChunkQueue; }
             set { downloadChunkQueue = value; }

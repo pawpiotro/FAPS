@@ -129,6 +129,7 @@ namespace FAPS
                             break;
                         case States.upload:
                             // Here goes upload
+                            startUpload();
                             state = States.idle;
                             break;
                         case States.other:
@@ -237,8 +238,43 @@ namespace FAPS
             }
             else
             {
-                Console.WriteLine("DSH: Unexpected server response: " + recvd.GetType());
+                Console.WriteLine("DSH: Unexpected server response during download: " + recvd.GetType());
                 scheduler.addFailed((CommandDownload) cmd);
+            }
+        }
+
+        private void startUpload()
+        {
+            cmdTrans.sendCmd(cmd);
+            CommandUpload upl = new CommandUpload((CommandUpload)cmd);
+            int fragments = (int)(upl.Size + scheduler.FragSize - 1 / scheduler.FragSize); // How many chunks to send. Round up.
+            CommandChunk chunk;
+            //state = States.uplwait;
+            Command recvd = cmdTrans.getCmd();
+            if (recvd.GetType().Equals(typeof(CommandAccept)))
+            {
+                // Upload all the chunks
+                for (int i = 0; i <= fragments; i++)
+                {
+                    chunk = monitor.UploadChunkQueue.Take(token);
+                    cmdTrans.sendCmd(chunk);
+                }
+                recvd = cmdTrans.getCmd();
+                if (!recvd.GetType().Equals(typeof(CommandCommitRdy)))
+                    Console.WriteLine("DSH: Unexpected server response after upload: " + recvd.GetType());
+                else
+                {
+                    CommandCommit commit = new CommandCommit();
+                    cmdTrans.sendCmd(commit);
+                    recvd = cmdTrans.getCmd();
+                    if (!recvd.GetType().Equals(typeof(CommandCommitAck)))
+                        Console.WriteLine("DSH: Unexpected server response after upload commit: " + recvd.GetType());
+                }
+            }
+            else
+            {
+                Console.WriteLine("DSH: Unexpected server response during upload: " + recvd.GetType());
+                scheduler.addFailed((CommandDownload)cmd);
             }
         }
 
