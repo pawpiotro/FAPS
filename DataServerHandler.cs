@@ -190,7 +190,7 @@ namespace FAPS
             Console.WriteLine("Server handler receiver thread has ended");
         }
 
-        public bool addDownload(string file, int frag)
+        public bool addDownload(CommandDownload _cmd, int frag)
         {
             lock (cmdLock)
             {
@@ -199,7 +199,7 @@ namespace FAPS
                 return true;
             }
         }
-        public bool addUpload(string file)
+        public bool addUpload(CommandUpload _cmd)
         {
             lock (cmdLock)
             {

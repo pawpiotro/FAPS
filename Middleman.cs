@@ -41,7 +41,7 @@ namespace FAPS
             Queue.Add(cmd, token);
         }
 
-        public void queueUpload(Command cmd)
+        /*public void queueUpload(Command cmd)
         {
                 //uploadQueue.Add(cmd, token);
             Queue.Add(cmd, token);
@@ -54,7 +54,7 @@ namespace FAPS
         }
 
         // Is there file waiting to download/upload/Command?
-        /*public bool dlReady()
+        public bool dlReady()
         {
                 if (downloadQueue.Count == 0)
                     return false;
@@ -118,11 +118,6 @@ namespace FAPS
         public int ulCount() { return uploadQueue.Count; }
         public int cmdCount() { return miscQueue.Count; }*/
         public int Count() { return Queue.Count; }
-
-
-        public int dlSize()     // Return size of file to download
-        {
-                return 0;
-        }
+        
     }
 }

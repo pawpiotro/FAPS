@@ -17,12 +17,20 @@ namespace FAPS
         private List <bool> succFrags;
         private NetworkFrame dlFile;
         private CancellationToken token;
+        private CommandProcessor currentClient;
+        private int fragSize;
+        private int fileBufferSize;
+
+        public int FragSize { get { return fragSize; } set { fragSize = value; } }
+        public int FileBufferSize { get { return fileBufferSize; } set { fileBufferSize = value; } }
 
         public Scheduler(Middleman _monitor, CancellationToken _token)
         {
             monitor = _monitor;
             token = _token;
             dwnloading = false;
+            fragSize = 1*8*1024;
+            fileBufferSize = 10;
 
             startService();
         }
@@ -79,85 +87,123 @@ namespace FAPS
             //create ServerHandler(upload, file, this)
         }
 
-        private void command(Command cmd, DataServerHandler server)
-        {
-                server.addCmd(cmd);
-        }
-
         public void run()
         {
             connectToServers();
-            /*   wez komendy
-                zrob komendy
-                profit
-                */
 
             while (!token.IsCancellationRequested)
             {
-                /*if (!dwnloading && monitor.dlReady())
-                {
-                    // Someone's waiting for a download, start dl
-                    dwnloading = true;
-                    lastFrag = 0;
-                    dlFile = monitor.dlFetch();
-                    maxFrag = monitor.dlSize();
-                    succFrags = new List <bool> (maxFrag);
-                    for (int i = 0; i < maxFrag; i++)
-                        succFrags.Add(false);
-                }
-                else if (dwnloading)
-                {
-                    // Check if file is downloaded
-                    if (lastFrag > maxFrag && failedFrags.Count == 0)   // Any fragments left to download?
-                    {
-                        bool done = true;
-                        for (int i = 0; i < maxFrag; i++)
-                            if (succFrags[i] == false)
-                                done = false;
-                        if (done)   // Did every fragment finished downloading?
-                            dwnloading = false;
-                    }
-                    else
-                    {
-                        // Look through the servers list and start download form idle ones
-                        for (int i = 0; i < serverList.Count; i++)
-                        {
-                            DataServerHandler server = serverList[i];
-                            if (!server.busy)
-                                if (failedFrags.Count > 0)   // At least one fragment has to be redownloaded
-                                {
-                                    download(dlFile, failedFrags.Dequeue(), server);
-                                    server.busy = true;
-                                }
-                                else if (lastFrag <= maxFrag)
-                                {
-                                    download(dlFile, lastFrag, server);
-                                    server.busy = true;
-                                    lastFrag++;
-                                }
-                        }
-                     }
-                }
-                if (monitor.ulReady())
-                {
-                    // Upload file on every server;
-                    NetworkFrame ulFile = monitor.ulFetch();
-                    foreach (DataServerHandler server in serverList)
-                        upload(ulFile, server);
-                }
-                if (monitor.cmdReady())
-                {
-                    NetworkFrame cmd = monitor.cmdFetch();
-                    /*if (cmd = FILELIST)     // Get the list from one server (since they all share same files)
-                        NetworkFrame(monitor.cmdfetch(), ServerList[0]);
-                    else
-                        foreach (DataServerHandler server in serverList)      // rename, delete etc - pass to all servers
-                            NetworkFrame(cmd, server);
-                }*/
                 Command cmd = monitor.Fetch();
-                foreach (DataServerHandler server in serverList)      // rename, delete etc - pass to all servers
-                    command(cmd, server);
+                processCommand(cmd);
             }
+        }
+
+
+
+        private void processCommand(Command cmd)
+        {
+            if (cmd.GetType().Equals(typeof(CommandDownload)))
+            {
+                startDownload((CommandDownload) cmd);
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandUpload)))
+            {
+                startUpload((CommandUpload) cmd);
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandList)))
+            {
+                send(cmd, serverList[0]);
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandRename)))
+            {
+                sendEveryone(cmd);
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandDelete)))
+            {
+                sendEveryone(cmd);
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandError)))
+            {
+                Console.WriteLine("SH: ERROR: " + ((CommandError)cmd).ErrorCode);
+                return;
+            }
+        }
+
+        private void sendEveryone(Command cmd)
+        {
+            foreach (DataServerHandler server in serverList)      // rename, delete etc - pass to all servers
+                send(cmd, server);
+        }
+
+        private void send(Command cmd, DataServerHandler server)
+        {
+            server.addCmd(cmd);
+        }
+
+        private void startDownload(CommandDownload cmd)
+        {
+            dwnloading = true;
+            int working = 0;
+            lastFrag = 0;
+            int totalSize = cmd.End;
+            maxFrag = totalSize / fragSize;
+            succFrags = new List<bool>(maxFrag);
+            for (int i = 0; i < maxFrag; i++)
+                succFrags.Add(false);
+            
+            while (dwnloading)
+            {
+                while (lastFrag < maxFrag)
+                {
+                    if (working <= fileBufferSize)
+                        ;
+                    else
+                        ;
+                }
+            }
+            // Check if file is downloaded
+            if (lastFrag > maxFrag && failedFrags.Count == 0)   // Any fragments left to download?
+            {
+                bool done = true;
+                for (int i = 0; i < maxFrag; i++)
+                    if (succFrags[i] == false)
+                        done = false;
+                if (done)   // Did every fragment finished downloading?
+                    dwnloading = false;
+            }
+            else
+            {
+                // Look through the servers list and start download form idle ones
+                for (int i = 0; i < serverList.Count; i++)
+                {
+                    DataServerHandler server = serverList[i];
+                    if (!server.busy)
+                        if (failedFrags.Count > 0)   // At least one fragment has to be redownloaded
+                        {
+                            download(dlFile, failedFrags.Dequeue(), server);
+                            server.busy = true;
+                        }
+                        else if (lastFrag <= maxFrag)
+                        {
+                            download(dlFile, lastFrag, server);
+                            server.busy = true;
+                            lastFrag++;
+                        }
+                }
+            }
+        }
+
+        private void startUpload(CommandUpload cmd)
+        {
+            // Upload file on every server;
+            sendEveryone(cmd);
+            foreach (DataServerHandler server in serverList)
+                server.addUpload(cmd);
         }
     }
 }
