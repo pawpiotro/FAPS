@@ -52,35 +52,25 @@ namespace FAPS
         private void run()
         {
             Command cmd = null;
-            do
+            try
             {
-                try
+                cmd = incoming.Take(token);
+                if (logIn((CommandLogin)cmd))
                 {
-                    cmd = incoming.Take(token);
-                    if (!(cmd.GetType().Equals(typeof(CommandLogin))))
+                    while (!token.IsCancellationRequested)
                     {
-                        Console.WriteLine("CH: Unexpected command");
-                        continue;
+                        cmd = incoming.Take(token);
+                        processCommand(cmd);
                     }
                 }
-                catch (OperationCanceledException oce)
-                {
-                    break;//
-                }
-            } while (!logIn((CommandLogin)cmd));
-            // LOGGED IN
-            while (!token.IsCancellationRequested)
-            {
-                try
-                {
-                    cmd = incoming.Take(token);
-                    processCommand(cmd);
-                }
-                catch (OperationCanceledException oce)
-                {
-                    //
-                }
             }
+            catch (OperationCanceledException oce)
+            {
+                if(!token.IsCancellationRequested)
+                    cts.Cancel();
+            }
+            
+
         }
         
 
@@ -155,13 +145,15 @@ namespace FAPS
                 }
                 else
                 {
-                    Console.WriteLine("CH: Login failed");
+                    Console.WriteLine("CH: Invalid login or password. Login failed");
+                    cts.Cancel();
                     return false;
                 }
             }
             catch (Exception)
             {
-                Console.WriteLine("CH: COMMAND LOGIN BUILD: FAILED");
+                Console.WriteLine("CH: Login failed");
+                cts.Cancel();
                 return false;
             }
           
