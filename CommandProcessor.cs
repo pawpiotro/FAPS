@@ -111,7 +111,7 @@ namespace FAPS
             if (cmd.GetType().Equals(typeof(CommandChunk)))
             {
                 if (((CommandChunk)cmd).SentByClient)
-                    monitor.UploadChunkQueue.Add(cmd);
+                    monitor.UploadChunkQueue.Add((CommandChunk) cmd);
                 else
                     toSend.Add(cmd);
                 return;
