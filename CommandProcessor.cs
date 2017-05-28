@@ -86,6 +86,11 @@ namespace FAPS
 
         private void processCommand(Command cmd)
         {
+            if (cmd.GetType().Equals(typeof(CommandAccept)))
+            {
+                toSend.Add(cmd);
+                return;
+            }
             if (cmd.GetType().Equals(typeof(CommandList)))
             {
                 monitor.queueMisc(cmd);
