@@ -4,16 +4,17 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using FAPS.Commands;
+using System.Collections.Concurrent;
 
 namespace FAPS
 {
     class Scheduler
     {
         private Middleman monitor;
-        private List<DataServerHandler> serverList = new List<DataServerHandler>();
+        private List <DataServerHandler> serverList = new List<DataServerHandler>();
         private bool dwnloading;
         private int lastFrag, maxFrag;
-        private Queue <int> failedFrags;
+        private BlockingCollection <CommandDownload> failedFrags;
         private List <bool> succFrags;
         private NetworkFrame dlFile;
         private CancellationToken token;
@@ -69,22 +70,6 @@ namespace FAPS
                 serverList.Add(dataServer);
             }
             return true;
-        }
-
-        public void success(int fragment)
-        {
-            // thready beda to wywolywac przy pomyslnym pobraniu fragmentu
-            succFrags[fragment] = true;
-        }
-
-        private void download(Command file, int fragment, DataServerHandler server)
-        {
-            //create ServerHandler(download, file, fragment, this, sever)
-        }
-
-        private void upload(Command file, DataServerHandler server)
-        {
-            //create ServerHandler(upload, file, this)
         }
 
         public void run()
@@ -147,55 +132,71 @@ namespace FAPS
 
         private void startDownload(CommandDownload cmd)
         {
-            dwnloading = true;
             int working = 0;
             lastFrag = 0;
             int totalSize = cmd.End;
             maxFrag = totalSize / fragSize;
             succFrags = new List<bool>(maxFrag);
+            int lastSucc = 0;
             for (int i = 0; i < maxFrag; i++)
                 succFrags.Add(false);
-            
-            while (dwnloading)
+
+            CommandDownload dwn;
+            DataServerHandler server;
+            while (true)
             {
-                while (lastFrag < maxFrag)
+                if (failedFrags.Count > 0)      // There are some fragments that need to be redownloaded
+                {
+                    server = avaibleServer();
+                    if (server != null)
+                    {
+                        dwn = failedFrags.Take(token);
+                        server.addDownload(dwn);
+                    }
+                }
+                else if (lastFrag < maxFrag)    // Still missing few
                 {
                     if (working <= fileBufferSize)
-                        ;
-                    else
-                        ;
-                }
-            }
-            // Check if file is downloaded
-            if (lastFrag > maxFrag && failedFrags.Count == 0)   // Any fragments left to download?
-            {
-                bool done = true;
-                for (int i = 0; i < maxFrag; i++)
-                    if (succFrags[i] == false)
-                        done = false;
-                if (done)   // Did every fragment finished downloading?
-                    dwnloading = false;
-            }
-            else
-            {
-                // Look through the servers list and start download form idle ones
-                for (int i = 0; i < serverList.Count; i++)
-                {
-                    DataServerHandler server = serverList[i];
-                    if (!server.busy)
-                        if (failedFrags.Count > 0)   // At least one fragment has to be redownloaded
+                    {
+                        server = avaibleServer();
+                        if (server != null)
                         {
-                            download(dlFile, failedFrags.Dequeue(), server);
-                            server.busy = true;
-                        }
-                        else if (lastFrag <= maxFrag)
-                        {
-                            download(dlFile, lastFrag, server);
-                            server.busy = true;
+                            dwn = makeChunk(cmd, lastFrag);
+                            server.addDownload(dwn);
                             lastFrag++;
+                            working++;
+                        }
+                    }
+                    else
+                        // Has the next fragment in order finished downloading?
+                        for (int i = lastSucc + 1; i < fileBufferSize; i++)
+                        {
+                            if (succFrags[i] == true)
+                            {
+                                lastSucc = i;
+                                working--;
+                            }
+                            else
+                                break;
                         }
                 }
+                else if (allSucc())
+                    // All fragments have started downloading and no one failed yet,
+                    // so check if they all succeeded
+                    break;
             }
+        }
+
+        private CommandDownload makeChunk(CommandDownload cmd, int frag)
+        {
+            CommandDownload newcmd = new CommandDownload(cmd);
+            newcmd.Begin = frag * fragSize;
+            newcmd.End = (frag + 1) * fragSize;
+            if (newcmd.Begin > cmd.End || newcmd.Begin < 0)
+                return null;
+            if (newcmd.End > cmd.End)
+                newcmd.End = cmd.End;
+            return newcmd;
         }
 
         private void startUpload(CommandUpload cmd)
@@ -204,6 +205,33 @@ namespace FAPS
             sendEveryone(cmd);
             foreach (DataServerHandler server in serverList)
                 server.addUpload(cmd);
+        }
+
+        private DataServerHandler avaibleServer()
+        {
+            foreach (DataServerHandler server in serverList)
+                if (server.State == DataServerHandler.States.idle)
+                    return server;
+            return null;
+        }
+
+        public void addFailed(CommandDownload cmd)
+        {
+            failedFrags.Add(cmd);
+        }
+
+        private bool allSucc()
+        {
+            for (int i = 0; i < maxFrag; i++)
+                if (succFrags[i] == false)
+                    return false;
+            return true;
+        }
+
+        public void success(int fragment)
+        {
+            // Server handlers will invoke this upon succesfull download
+            succFrags[fragment] = true;
         }
     }
 }

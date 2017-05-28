@@ -18,6 +18,15 @@ namespace FAPS.Commands
         public String Filename { get { return filename; } set { filename = value; } }
         public CommandProcessor CmdProc { get { return cmdProc; } set { cmdProc = value; } }
 
+        public CommandDownload(CommandDownload cmd)
+        {
+            begin = cmd.Begin;
+            end = cmd.End;
+            filename = cmd.Filename;
+            user = cmd.User;
+            cmdProc = cmd.CmdProc;
+        }
+
         public CommandDownload(NetworkFrame nf) : base(nf)
         {
             byte[] data = nf.Data;

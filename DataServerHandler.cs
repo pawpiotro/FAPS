@@ -22,8 +22,10 @@ namespace FAPS
         public bool busy = false;
         private Command cmd = null;     // current?
         private static object cmdLock = new object();
-        private enum State {download, upload, other, idle};
-        private State state = State.idle;
+        public enum States {download, upload, other, idle};
+        private States state = States.idle;
+
+        public States State { get { return state; } }
 
         private CommandTransceiver cmdTrans;
 
@@ -120,21 +122,21 @@ namespace FAPS
                     waitForSch();
                     switch (state)
                     {
-                        case State.download:
+                        case States.download:
                             // Here goes download
                             Console.WriteLine("Download");
-                            state = State.idle;
+                            state = States.idle;
                             break;
-                        case State.upload:
+                        case States.upload:
                             // Here goes upload
                             Console.WriteLine("Upload");
-                            state = State.idle;
+                            state = States.idle;
                             break;
-                        case State.other:
+                        case States.other:
                             // Here goes Command send
                             Console.WriteLine("Wysyłam");
                             cmdTrans.sendCmd(cmd);
-                            state = State.idle;
+                            state = States.idle;
                             cmd = null;
                             break;
                     }
@@ -190,11 +192,11 @@ namespace FAPS
             Console.WriteLine("Server handler receiver thread has ended");
         }
 
-        public bool addDownload(CommandDownload _cmd, int frag)
+        public bool addDownload(CommandDownload _cmd)
         {
             lock (cmdLock)
             {
-                state = State.download;
+                state = States.download;
                 Monitor.Pulse(cmdLock);
                 return true;
             }
@@ -203,7 +205,7 @@ namespace FAPS
         {
             lock (cmdLock)
             {
-                state = State.upload;
+                state = States.upload;
                 Monitor.Pulse(cmdLock);
                 return true;
             }
@@ -213,7 +215,7 @@ namespace FAPS
             lock (cmdLock)
             {
                 cmd = _cmd;
-                state = State.other;
+                state = States.other;
                 Monitor.Pulse(cmdLock);
                 return true;
             }
@@ -232,7 +234,7 @@ namespace FAPS
         {
             lock (cmdLock)
             {
-                while (state == State.idle)
+                while (state == States.idle)
                 {
                     Monitor.Wait(cmdLock);
                 }
