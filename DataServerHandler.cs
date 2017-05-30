@@ -257,6 +257,7 @@ namespace FAPS
             if (recvd.GetType().Equals(typeof(CommandAccept)))
             {
                 // Upload all the chunks
+                Console.WriteLine("Upload zaakceptowany");
                 for (int i = 0; i <= fragments; i++)
                 {
                     Console.WriteLine("Wysylam chunk...");
