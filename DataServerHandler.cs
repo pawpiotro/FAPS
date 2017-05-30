@@ -134,9 +134,8 @@ namespace FAPS
                             break;
                         case States.other:
                             // Here goes Command send
-                            cmdTrans.sendCmd(cmd);
+                            startCommand();
                             state = States.idle;
-                            cmd = null;
                             break;
                     }
                 }
@@ -283,6 +282,45 @@ namespace FAPS
             else
             {
                 Console.WriteLine("DSH: Unexpected server response during upload: " + recvd.GetType());
+            }
+        }
+
+        private void startCommand()
+        {
+            cmdTrans.sendCmd(cmd);
+
+            if (cmd.GetType().Equals(typeof(CommandDelete)) ||
+                cmd.GetType().Equals(typeof(CommandRename)))
+            {
+                Console.WriteLine("Wysylam delete/rename...");
+                Command recvd = cmdTrans.getCmd();
+                if (recvd.GetType().Equals(typeof(CommandAccept)))
+                {
+                    CommandCommit commit = new CommandCommit();
+                    cmdTrans.sendCmd(commit);
+                    Console.WriteLine("Wysylam commit...");
+                    recvd = cmdTrans.getCmd();
+                    if (!recvd.GetType().Equals(typeof(CommandCommitAck)))
+                        Console.WriteLine("DSH: Unexpected server response after cmd commit: " + recvd.GetType());
+                }
+                else
+                    Console.WriteLine("DSH: Unexpected server response after cmd: " + recvd.GetType());
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandList)))
+            {
+                Console.WriteLine("Wysylam list...");
+                Command recvd = cmdTrans.getCmd();
+                if (recvd.GetType().Equals(typeof(CommandChunk)))
+                    ; //cmd.CmdProc.Incoming.Add(recvd, token);
+                else
+                    Console.WriteLine("DSH: Unexpected server response after cmd: " + recvd.GetType());
+                return;
+            }
+            if (cmd.GetType().Equals(typeof(CommandError)))
+            {
+                Console.WriteLine("SH: ERROR: " + ((CommandError)cmd).ErrorCode);
+                return;
             }
         }
 
