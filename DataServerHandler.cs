@@ -261,7 +261,7 @@ namespace FAPS
                 upl.CmdProc.Incoming.Add(recvd, token);
                 // Upload all the chunks
                 Console.WriteLine("Upload zaakceptowany");
-                for (int i = 0; i <= fragments; i++)
+                for (int i = 0; i < fragments; i++)
                 {
                     Console.WriteLine("Wysylam chunk...");
                     chunk = monitor.UploadChunkQueue.Take(token);
