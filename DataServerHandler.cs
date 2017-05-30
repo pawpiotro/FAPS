@@ -199,6 +199,7 @@ namespace FAPS
         {
             lock (cmdLock)
             {
+                cmd = _cmd;
                 state = States.download;
                 Monitor.Pulse(cmdLock);
                 return true;
@@ -208,6 +209,7 @@ namespace FAPS
         {
             lock (cmdLock)
             {
+                cmd = _cmd;
                 state = States.upload;
                 Monitor.Pulse(cmdLock);
                 return true;
