@@ -226,6 +226,7 @@ namespace FAPS
         
         private void startDownload()
         {
+            Console.WriteLine("Rozpoczeto download");
             CommandDownload dwn = new CommandDownload((CommandDownload)cmd);
             cmdTrans.sendCmd(cmd);
             //state = States.dwnwait;
@@ -233,6 +234,7 @@ namespace FAPS
             if (recvd.GetType().Equals(typeof(CommandChunk)))
             {
                 // Pass the chunk
+                Console.WriteLine("Pobieram chunk...");
                 dwn.CmdProc.Incoming.Add(recvd, token);
                 scheduler.success(dwn.Begin / scheduler.FragSize);
             }
@@ -245,6 +247,7 @@ namespace FAPS
 
         private void startUpload()
         {
+            Console.WriteLine("Rozpoczeto upload");
             cmdTrans.sendCmd(cmd);
             CommandUpload upl = new CommandUpload((CommandUpload)cmd);
             int fragments = (int)(upl.Size + scheduler.FragSize - 1 / scheduler.FragSize); // How many chunks to send. Round up.
@@ -256,6 +259,7 @@ namespace FAPS
                 // Upload all the chunks
                 for (int i = 0; i <= fragments; i++)
                 {
+                    Console.WriteLine("Wysylam chunk...");
                     chunk = monitor.UploadChunkQueue.Take(token);
                     cmdTrans.sendCmd(chunk);
                 }
@@ -266,6 +270,7 @@ namespace FAPS
                 {
                     CommandCommit commit = new CommandCommit();
                     cmdTrans.sendCmd(commit);
+                    Console.WriteLine("Wysylam commit...");
                     recvd = cmdTrans.getCmd();
                     if (!recvd.GetType().Equals(typeof(CommandCommitAck)))
                         Console.WriteLine("DSH: Unexpected server response after upload commit: " + recvd.GetType());
