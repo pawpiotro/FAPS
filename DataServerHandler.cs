@@ -280,7 +280,6 @@ namespace FAPS
             else
             {
                 Console.WriteLine("DSH: Unexpected server response during upload: " + recvd.GetType());
-                scheduler.addFailed((CommandDownload)cmd);
             }
         }
 
