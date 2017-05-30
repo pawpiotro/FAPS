@@ -202,7 +202,6 @@ namespace FAPS
         private void startUpload(CommandUpload cmd)
         {
             // Upload file on every server;
-            sendEveryone(cmd);
             foreach (DataServerHandler server in serverList)
                 server.addUpload(cmd);
         }
