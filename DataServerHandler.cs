@@ -258,6 +258,7 @@ namespace FAPS
             Command recvd = cmdTrans.getCmd();
             if (recvd.GetType().Equals(typeof(CommandAccept)))
             {
+                upl.CmdProc.Incoming.Add(recvd, token);
                 // Upload all the chunks
                 Console.WriteLine("Upload zaakceptowany");
                 for (int i = 0; i <= fragments; i++)
