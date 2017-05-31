@@ -228,7 +228,7 @@ namespace FAPS
         private void startDownload()
         {
             Console.WriteLine("Rozpoczeto download");
-            CommandDownload dwn = new CommandDownload((CommandDownload)cmd);
+            CommandDownload dwn = (CommandDownload)cmd;
             cmdTrans.sendCmd(cmd);
             //state = States.dwnwait;
             Command recvd = cmdTrans.getCmd();
@@ -250,7 +250,7 @@ namespace FAPS
         {
             Console.WriteLine("Rozpoczeto upload");
             cmdTrans.sendCmd(cmd);
-            CommandUpload upl = new CommandUpload((CommandUpload)cmd);
+            CommandUpload upl = (CommandUpload)cmd;
             int fragments = (int)(upl.Size + scheduler.FragSize - 1 / scheduler.FragSize); // How many chunks to send. Round up.
             CommandChunk chunk;
             //state = States.uplwait;

@@ -5,6 +5,8 @@ namespace FAPS.Commands
     class CommandList:Command
     {
         private String user;
+        private CommandProcessor cmdProc;
+        public CommandProcessor CmdProc { get { return cmdProc; } set { cmdProc = value; } }
 
         public String User { get { return user; } set { user = value; } }
 

@@ -83,6 +83,7 @@ namespace FAPS
             }
             if (cmd.GetType().Equals(typeof(CommandList)))
             {
+                ((CommandList)cmd).CmdProc = this;
                 monitor.queueMisc(cmd);
                 return;
             }
