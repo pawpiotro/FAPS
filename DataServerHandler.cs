@@ -312,7 +312,10 @@ namespace FAPS
                 Console.WriteLine("Wysylam list...");
                 Command recvd = cmdTrans.getCmd();
                 if (recvd.GetType().Equals(typeof(CommandChunk)))
-                    ; //cmd.CmdProc.Incoming.Add(recvd, token);
+                {
+                    Console.WriteLine("Wysylam list...");
+                    ((CommandList)recvd).CmdProc.Incoming.Add(recvd, token);
+                }
                 else
                     Console.WriteLine("DSH: Unexpected server response after cmd: " + recvd.GetType());
                 return;
