@@ -12,15 +12,14 @@ namespace FAPS
     {
         private Middleman monitor;
         private List <DataServerHandler> serverList = new List<DataServerHandler>();
+        private static object dshLock = new object();
         private bool dwnloading;
-        private int lastFrag, maxFrag;
+        private int lastFrag, maxFrag, lastSucc, fragSize, fileBufferSize;
         private BlockingCollection <CommandDownload> failedFrags;
         private List <bool> succFrags;
         private NetworkFrame dlFile;
         private CancellationToken token;
         private CommandProcessor currentClient;
-        private int fragSize;
-        private int fileBufferSize;
 
         public int FragSize { get { return fragSize; } set { fragSize = value; } }
         public int FileBufferSize { get { return fileBufferSize; } set { fileBufferSize = value; } }
@@ -132,12 +131,13 @@ namespace FAPS
 
         private void startDownload(CommandDownload cmd)
         {
-            int working = 0;
+            currentClient = cmd.CmdProc;
             lastFrag = 0;
             int totalSize = cmd.End;
             maxFrag = totalSize / fragSize;
+            monitor.setDownloadBuffer(fileBufferSize);
             succFrags = new List<bool>(maxFrag);
-            int lastSucc = 0;
+            lastSucc = 0;
             for (int i = 0; i < maxFrag; i++)
                 succFrags.Add(false);
 
@@ -145,40 +145,22 @@ namespace FAPS
             DataServerHandler server;
             while (true)
             {
+                server = avaibleServer();
                 if (failedFrags.Count > 0)      // There are some fragments that need to be redownloaded
                 {
-                    server = avaibleServer();
-                    if (server != null)
-                    {
-                        dwn = failedFrags.Take(token);
-                        server.addDownload(dwn, dwn.Begin / fragSize);
-                    }
+                    dwn = failedFrags.Take(token);
+                    server.addDownload(dwn, dwn.Begin / fragSize);
                 }
                 else if (lastFrag < maxFrag)    // Still missing few
                 {
-                    if (working <= fileBufferSize)
+                    if (lastFrag >= lastSucc + fileBufferSize)
                     {
-                        server = avaibleServer();
-                        if (server != null)
-                        {
-                            dwn = makeChunk(cmd, lastFrag);
-                            server.addDownload(dwn, lastFrag);
-                            lastFrag++;
-                            working++;
-                        }
+                        waitForDsh();
+                        continue;
                     }
-                    else
-                        // Has the next fragment in order finished downloading?
-                        for (int i = lastSucc + 1; i < fileBufferSize; i++)
-                        {
-                            if (succFrags[i] == true)
-                            {
-                                lastSucc = i;
-                                working--;
-                            }
-                            else
-                                break;
-                        }
+                    dwn = makeChunk(cmd, lastFrag);
+                    server.addDownload(dwn, lastFrag);
+                    lastFrag++;
                 }
                 else if (allSucc())
                     // All fragments have started downloading and no one failed yet,
@@ -208,10 +190,13 @@ namespace FAPS
 
         private DataServerHandler avaibleServer()
         {
-            foreach (DataServerHandler server in serverList)
-                if (server.State == DataServerHandler.States.idle)
-                    return server;
-            return null;
+            while (true)
+            {
+                foreach (DataServerHandler server in serverList)
+                    if (server.State == DataServerHandler.States.idle)
+                        return server;
+                waitForDsh();
+            }
         }
 
         public void addFailed(CommandDownload cmd)
@@ -223,7 +208,10 @@ namespace FAPS
         {
             for (int i = 0; i < maxFrag; i++)
                 if (succFrags[i] == false)
+                {
+                    waitForDsh();
                     return false;
+                }
             return true;
         }
 
@@ -231,6 +219,34 @@ namespace FAPS
         {
             // Server handlers will invoke this upon succesfull download
             succFrags[fragment] = true;
+            // Has the next fragment in order finished downloading?
+            for (int i = lastSucc; i < fileBufferSize; i++)
+            {
+                if (succFrags[i] == true)
+                {
+                    lastSucc = i + 1;
+                    currentClient.Incoming.Add(monitor.takeDownloadChunk(i), token);
+                }
+                else
+                    break;
+            }
         }
+
+        private void waitForDsh()
+        {
+            lock (dshLock)
+            {
+                Monitor.Wait(dshLock);
+            }
+        }
+
+        public void wake()
+        {
+            lock (dshLock)
+            {
+                Monitor.Pulse(dshLock);
+            }
+        }
+
     }
 }

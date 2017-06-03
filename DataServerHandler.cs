@@ -238,7 +238,7 @@ namespace FAPS
             {
                 // Pass the chunk
                 Console.WriteLine("Pobieram chunk...");
-                monitor.DownloadChunkQueue[dwnfrag] = (CommandChunk) recvd;
+                monitor.addDownloadChunk((CommandChunk) recvd, dwnfrag);
                 scheduler.success(dwnfrag);
             }
             else

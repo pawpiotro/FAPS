@@ -16,7 +16,8 @@ namespace FAPS
         */
         private BlockingCollection<Command> Queue = new BlockingCollection<Command>();
         private BlockingCollection<CommandChunk> uploadChunkQueue = new BlockingCollection<CommandChunk>();
-        private CommandChunk[] downloadChunkQueue;
+        private CommandChunk[] downloadBuffer;
+        private int bufferSize;
 
         public BlockingCollection<CommandChunk> UploadChunkQueue
         {
@@ -24,10 +25,26 @@ namespace FAPS
             set { uploadChunkQueue = value; }
         }
 
-        public CommandChunk[] DownloadChunkQueue
+        /*public CommandChunk[] DownloadChunkQueue
         {
-            get { return downloadChunkQueue; }
-            set { downloadChunkQueue = value; }
+            get { return downloadBuffer; }
+            set { downloadBuffer = value; }
+        }*/
+
+        public void setDownloadBuffer(int size)
+        {
+            bufferSize = size;
+            downloadBuffer = new CommandChunk[size];
+        }
+        public void addDownloadChunk(CommandChunk chunk, int frag)
+        {
+            frag = frag % bufferSize;
+            downloadBuffer[frag] = chunk;
+        }
+        public CommandChunk takeDownloadChunk(int frag)
+        {
+            frag = frag % bufferSize;
+            return downloadBuffer[frag];
         }
 
         public Middleman(CancellationToken _token)
