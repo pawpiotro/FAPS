@@ -16,10 +16,10 @@ namespace FAPS
             fromClient = _fromClient;
         }
 
-        private NetworkFrame receiveNetworkFrame()
+        private NetworkFrame receiveNetworkFrame(int timeout = 10000)
         {
             NetworkFrame nf = new NetworkFrame();
-            socket.ReceiveTimeout = 10000;
+            socket.ReceiveTimeout = timeout;
             try
             {
                 int rec = socket.Receive(nf.Code);
@@ -52,12 +52,12 @@ namespace FAPS
             }
         }
 
-        public Command getCmd()
+        public Command getCmd(int timeout = 10000)
         {
             NetworkFrame nf;
             try
             {
-                nf = receiveNetworkFrame();
+                nf = receiveNetworkFrame(timeout);
 
                 switch ((NetworkFrame.CMD)nf.nCode)
                 {
@@ -95,9 +95,10 @@ namespace FAPS
             }
         }
 
-        public void sendCmd(Command cmd)
+        public void sendCmd(Command cmd, int timeout = 0)
         {
             NetworkFrame nf = cmd.toNetworkFrame();
+            socket.SendTimeout = timeout;
             try
             {
                 int sent = socket.Send(nf.Code);
