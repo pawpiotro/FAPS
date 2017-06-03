@@ -12,6 +12,11 @@ namespace FAPS.Commands
             set { errorCode = value; }
         }
 
+        public CommandError(int code)
+        {
+            errorCode = code;
+        }
+
         public CommandError(NetworkFrame nf) : base(nf)
         {
             byte[] tmp = nf.Data;

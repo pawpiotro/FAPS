@@ -15,7 +15,7 @@ namespace FAPS
         private BlockingCollection<Command> incoming = new BlockingCollection<Command>();
         private BlockingCollection<Command> toSend = new BlockingCollection<Command>();
         private Middleman monitor;
-        private String id;
+        private String id = "";
 
         public BlockingCollection<Command> ToSend
         {
@@ -119,7 +119,7 @@ namespace FAPS
             }
             if (cmd.GetType().Equals(typeof(CommandError)))
             {
-                Console.WriteLine("CH: ERROR: " + ((CommandError)cmd).ErrorCode);
+                Console.WriteLine("CH " + ID +": ERROR: " + ((CommandError)cmd).ErrorCode);
                 cts.Cancel();
                 return;
             }
@@ -134,26 +134,29 @@ namespace FAPS
         {            
             try
             {
-                Console.WriteLine("CH: logging in...");
-                Console.WriteLine("CH: Login: {0} Pass: {1}", cmd.User, cmd.Pass);
+                Console.WriteLine("CH *new*: logging in...");
+                Console.WriteLine("CH *new*: Login: {0} Pass: {1}", cmd.User, cmd.Pass);
                 if (authenticate(cmd.User, cmd.Pass))
                 {
-                    Console.WriteLine("CH: Login successful");
                     ID = cmd.User;
+                    Console.WriteLine("CH " + ID + ": Login successful");
                     Command ctmp = new CommandAccept();
                     ToSend.Add(ctmp);
                     return true;
                 }
                 else
                 {
-                    Console.WriteLine("CH: Invalid login or password. Login failed");
+                    Console.WriteLine("CH *new*: Invalid login or password. Login failed");
+                    Command ctmp = new CommandError(402);
+                    ToSend.Add(ctmp);
+                    Thread.Sleep(3000);
                     cts.Cancel();
                     return false;
                 }
             }
             catch (Exception)
             {
-                Console.WriteLine("CH: Login failed");
+                Console.WriteLine("CH *new*: Login failed");
                 cts.Cancel();
                 return false;
             }
@@ -178,19 +181,6 @@ namespace FAPS
                 return true;
             else
                 return false;
-        }
-
-        private void EXIT()
-        {
-            cts.Cancel();
-        }
-
-        private void ERROR()
-        {
-            Console.WriteLine("CH: ERROR");
-            cts.Cancel();
-        }
-
-   
+        }   
     }
 }

@@ -35,7 +35,7 @@ namespace FAPS
 
         public void CancelAsync()
         {
-            Console.WriteLine("CH: CLIENT HANDLER CANCEL");
+            Console.WriteLine("CH " + cmdProc.ID + ": CLIENT HANDLER CANCEL");
             try
             {
                 if (socket.Connected)
@@ -60,7 +60,10 @@ namespace FAPS
                     cmd = cmdTrans.getCmd();
                     if (!cmd.Equals(null))
                     {
-                        Console.WriteLine("CH: Received command: " + cmd.GetType());
+                        if(cmdProc.ID.Equals(""))
+                            Console.WriteLine("CH *new*: Received command: " + cmd.GetType());
+                        else
+                            Console.WriteLine("CH " + cmdProc.ID + ": Received command: " + cmd.GetType());
                         cmdProc.Incoming.Add(cmd);
                     }
                 }
@@ -72,7 +75,7 @@ namespace FAPS
                 }
                 catch(Exception e)
                 {
-                    Console.WriteLine("CH: Receiver: Connection with client closed");
+                    Console.WriteLine("CH " + cmdProc.ID + ": Receiver: Connection with client closed");
                     break;
                 }
             }
@@ -85,7 +88,7 @@ namespace FAPS
             if(!token.IsCancellationRequested)
                 cts.Cancel();
             ctr.Dispose();
-            Console.WriteLine("CH: Receiver: Client handler thread has ended");
+            Console.WriteLine("CH " + cmdProc.ID + ": Receiver: Client handler thread has ended");
         }
 
         public void runSender()
@@ -98,7 +101,7 @@ namespace FAPS
                 try
                 {
                     cmd = cmdProc.ToSend.Take(token);
-                    Console.WriteLine("Sent command: " + cmd.GetType());
+                    Console.WriteLine("CH " + cmdProc.ID + ": Sent command: " + cmd.GetType());
                     cmdTrans.sendCmd(cmd);
                 }
                 catch (SocketException se)
@@ -108,7 +111,7 @@ namespace FAPS
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("CH: Sender: Connection with client closed");
+                    Console.WriteLine("CH " + cmdProc.ID + ": Sender: Connection with client closed");
                     break;
                 }
             }
@@ -121,7 +124,7 @@ namespace FAPS
             if (!token.IsCancellationRequested)
                 cts.Cancel();
             ctr.Dispose();
-            Console.WriteLine("CH: Sender: Client handler thread has ended");
+            Console.WriteLine("CH " + cmdProc.ID + ": Sender: Client handler thread has ended");
         }
 
     }
