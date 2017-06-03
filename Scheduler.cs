@@ -151,7 +151,7 @@ namespace FAPS
                     if (server != null)
                     {
                         dwn = failedFrags.Take(token);
-                        server.addDownload(dwn);
+                        server.addDownload(dwn, dwn.Begin / fragSize);
                     }
                 }
                 else if (lastFrag < maxFrag)    // Still missing few
@@ -162,7 +162,7 @@ namespace FAPS
                         if (server != null)
                         {
                             dwn = makeChunk(cmd, lastFrag);
-                            server.addDownload(dwn);
+                            server.addDownload(dwn, lastFrag);
                             lastFrag++;
                             working++;
                         }

@@ -77,6 +77,12 @@ namespace FAPS
                         return new CommandDelete(nf);
                     case NetworkFrame.CMD.RENAME:
                         return new CommandRename(nf);
+                    case NetworkFrame.CMD.COMMIT:
+                        return new CommandCommit(nf);
+                    case NetworkFrame.CMD.COMMITACK:
+                        return new CommandCommitAck(nf);
+                    case NetworkFrame.CMD.COMMITRDY:
+                        return new CommandCommitRdy(nf);
                     case NetworkFrame.CMD.ERROR:
                         return new CommandError(nf);
                     case NetworkFrame.CMD.EXIT:

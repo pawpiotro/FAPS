@@ -16,7 +16,7 @@ namespace FAPS
         */
         private BlockingCollection<Command> Queue = new BlockingCollection<Command>();
         private BlockingCollection<CommandChunk> uploadChunkQueue = new BlockingCollection<CommandChunk>();
-        private BlockingCollection<CommandChunk> downloadChunkQueue = new BlockingCollection<CommandChunk>();
+        private CommandChunk[] downloadChunkQueue;
 
         public BlockingCollection<CommandChunk> UploadChunkQueue
         {
@@ -24,7 +24,7 @@ namespace FAPS
             set { uploadChunkQueue = value; }
         }
 
-        public BlockingCollection<CommandChunk> DownloadChunkQueue
+        public CommandChunk[] DownloadChunkQueue
         {
             get { return downloadChunkQueue; }
             set { downloadChunkQueue = value; }

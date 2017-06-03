@@ -22,6 +22,7 @@ namespace FAPS
         public bool busy = false;
         private Command cmd = null;
         private static object cmdLock = new object();
+        private int dwnfrag;
         public enum States {download, dwnwait, upload, uplwait, other, idle};
         private States state = States.idle;
 
@@ -194,10 +195,11 @@ namespace FAPS
             Console.WriteLine("Server handler receiver thread has ended");
         }
 
-        public bool addDownload(CommandDownload _cmd)
+        public bool addDownload(CommandDownload _cmd, int fragment)
         {
             lock (cmdLock)
             {
+                dwnfrag = fragment;
                 cmd = _cmd;
                 state = States.download;
                 Monitor.Pulse(cmdLock);
@@ -236,8 +238,8 @@ namespace FAPS
             {
                 // Pass the chunk
                 Console.WriteLine("Pobieram chunk...");
-                dwn.CmdProc.Incoming.Add(recvd, token);
-                scheduler.success(dwn.Begin / scheduler.FragSize);
+                monitor.DownloadChunkQueue[dwnfrag] = (CommandChunk) recvd;
+                scheduler.success(dwnfrag);
             }
             else
             {
@@ -251,7 +253,8 @@ namespace FAPS
             Console.WriteLine("Rozpoczeto upload");
             cmdTrans.sendCmd(cmd);
             CommandUpload upl = (CommandUpload)cmd;
-            int fragments = (int)(upl.Size + scheduler.FragSize - 1 / scheduler.FragSize); // How many chunks to send. Round up.
+            //int fragments = (int)(upl.Size + scheduler.FragSize - 1 / scheduler.FragSize); // How many chunks to send. Round up.
+            long sentSize = 0;
             CommandChunk chunk;
             //state = States.uplwait;
             Command recvd = cmdTrans.getCmd();
@@ -260,23 +263,28 @@ namespace FAPS
                 upl.CmdProc.Incoming.Add(recvd, token);
                 // Upload all the chunks
                 Console.WriteLine("Upload zaakceptowany");
-                for (int i = 0; i < fragments; i++)
+                //for (int i = 0; i < fragments; i++)
+                while (sentSize < upl.Size)
                 {
-                    Console.WriteLine("Wysylam chunk...");
                     chunk = monitor.UploadChunkQueue.Take(token);
+                    Console.WriteLine("Wysylam chunk o rozmiarze: " + chunk.Data.Length);
                     cmdTrans.sendCmd(chunk);
+                    sentSize += chunk.Data.Length;
                 }
+                Console.WriteLine("Wyslano wszystkie chunki.");
                 recvd = cmdTrans.getCmd();
                 if (!recvd.GetType().Equals(typeof(CommandCommitRdy)))
                     Console.WriteLine("DSH: Unexpected server response after upload: " + recvd.GetType());
                 else
                 {
+                    Console.WriteLine("Wysylam commit...");
                     CommandCommit commit = new CommandCommit();
                     cmdTrans.sendCmd(commit);
-                    Console.WriteLine("Wysylam commit...");
                     recvd = cmdTrans.getCmd();
                     if (!recvd.GetType().Equals(typeof(CommandCommitAck)))
                         Console.WriteLine("DSH: Unexpected server response after upload commit: " + recvd.GetType());
+                    else
+                        Console.WriteLine("Potwierdzono commit.");
                 }
             }
             else
@@ -302,6 +310,8 @@ namespace FAPS
                     recvd = cmdTrans.getCmd();
                     if (!recvd.GetType().Equals(typeof(CommandCommitAck)))
                         Console.WriteLine("DSH: Unexpected server response after cmd commit: " + recvd.GetType());
+                    else
+                        Console.WriteLine("Potwierdzono commit.");
                 }
                 else
                     Console.WriteLine("DSH: Unexpected server response after cmd: " + recvd.GetType());
