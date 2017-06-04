@@ -321,14 +321,21 @@ namespace FAPS
                 Command recvd = cmdTrans.getCmd();
                 if (recvd.GetType().Equals(typeof(CommandAccept)))
                 {
-                    CommandCommit commit = new CommandCommit();
-                    cmdTrans.sendCmd(commit);
-                    Console.WriteLine("Wysylam commit...");
                     recvd = cmdTrans.getCmd();
-                    if (!recvd.GetType().Equals(typeof(CommandCommitAck)))
-                        Console.WriteLine("DSH: Unexpected server response after cmd commit: " + recvd.GetType());
-                    else
-                        Console.WriteLine("Potwierdzono commit.");
+                    if (recvd.GetType().Equals(typeof(CommandCommitRdy)))
+                    {
+                        CommandCommit commit = scheduler.waitForCommit();
+                        cmdTrans.sendCmd(commit);
+                        Console.WriteLine("Wysylam commit...");
+                        recvd = cmdTrans.getCmd();
+                        if (!recvd.GetType().Equals(typeof(CommandCommitAck)))
+                            Console.WriteLine("DSH: Unexpected server response after cmd commit: " + recvd.GetType());
+                        else
+                        {
+                            Console.WriteLine("Potwierdzono commit.");
+                            scheduler.ConfirmCommit();
+                        }
+                    }
                 }
                 else
                     Console.WriteLine("DSH: Unexpected server response after cmd: " + recvd.GetType());

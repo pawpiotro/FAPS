@@ -105,12 +105,12 @@ namespace FAPS
             }
             if (cmd.GetType().Equals(typeof(CommandRename)))
             {
-                sendEveryone(cmd);
+                startOther(cmd);
                 return;
             }
             if (cmd.GetType().Equals(typeof(CommandDelete)))
             {
-                sendEveryone(cmd);
+                startOther(cmd);
                 return;
             }
             if (cmd.GetType().Equals(typeof(CommandError)))
@@ -271,6 +271,35 @@ namespace FAPS
             }
         }
 
+        private void startOther(Command cmd)
+        {
+            sendEveryone(cmd);
+            CommandRename tosend;
+            if (cmd.GetType().Equals(typeof(CommandRename)))
+                tosend = (CommandRename)cmd;
+            else if (cmd.GetType().Equals(typeof(CommandDelete)))
+                tosend = (CommandRename)cmd;
+            else
+                return;
+            lock (schLock)
+            {
+                while (waitingForCommit < serverList.Count)
+                    Monitor.Wait(schLock);
+                commit = new CommandCommit();
+                Console.WriteLine("Commit gotowy");
+                lock (dshLock)
+                    Monitor.PulseAll(dshLock);
+                // Submit commit, wait for all CommitAcks
+                while (commited < serverList.Count)
+                    Monitor.Wait(schLock);
+                waitingForCommit = 0;
+                commited = 0;
+                commit = null;
+                Console.WriteLine("Zuploadowano plik na kazdy serwer");
+                cmd.CmdProc.Incoming.Add(new CommandAccept(), token);
+            }
+        }
+
         private DataServerHandler avaibleServer()
         {
             while (true)
@@ -289,19 +318,21 @@ namespace FAPS
 
         private bool allSucc()
         {
-            for (int i = 0; i < maxFrag; i++)
-                if (succFrags[i] == false)
-                {
-                    waitForDwn();
-                    return false;
-                }
+            lock(schLock)
+                for (int i = 0; i < maxFrag; i++)
+                    if (succFrags[i] == false)
+                    {
+                        waitForDwn();
+                        return false;
+                    }
             return true;
         }
 
         public void success(int fragment)
         {
             // Server handlers will invoke this upon succesfull download
-            succFrags[fragment] = true;
+            lock(schLock)
+                succFrags[fragment] = true;
         }
 
         public CommandChunk takeUplChunk(int frag)
