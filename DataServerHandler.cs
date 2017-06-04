@@ -17,11 +17,10 @@ namespace FAPS
         private Socket socket;
         private string address;
         private int port;
-
-        private bool readyToSend = true;
+        
         public bool busy = false;
         private Command cmd = null;
-        private static object cmdLock = new object();
+        private object cmdLock = new object();
         private int dwnfrag;
         public enum States {download, dwnwait, upload, uplwait, other, idle};
         private States state = States.idle;
@@ -212,7 +211,7 @@ namespace FAPS
                 dwnfrag = fragment;
                 cmd = _cmd;
                 state = States.download;
-                Monitor.PulseAll(cmdLock);
+                Monitor.Pulse(cmdLock);
                 Console.WriteLine("DSH: Zpulsowano");
                 return true;
             }

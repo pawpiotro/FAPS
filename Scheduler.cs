@@ -16,7 +16,7 @@ namespace FAPS
         private static object schLock = new object();
         private int lastFrag, maxFrag, lastSucc, fragSize, fileBufferSize;
         private BlockingCollection <CommandDownload> failedFrags = new BlockingCollection<CommandDownload>();
-        private List <bool> succFrags;
+        private bool[] succFrags;
         private byte[] uplFrags;
         private CommandChunk[] uplBuff;
         private CancellationToken token;
@@ -154,10 +154,10 @@ namespace FAPS
             int totalSize = cmd.End;
             maxFrag = (totalSize + fragSize - 1) / fragSize; // Round up
             monitor.setDownloadBuffer(fileBufferSize);
-            succFrags = new List<bool>(maxFrag);
+            succFrags = new bool[maxFrag];
             lastSucc = 0;
             for (int i = 0; i < maxFrag; i++)
-                succFrags.Add(false);
+                succFrags[i] = false;
 
             CommandDownload dwn;
             DataServerHandler server;
@@ -335,7 +335,7 @@ namespace FAPS
             {
                 Monitor.Wait(schLock);
                 // Has the next fragment in order finished downloading?
-                for (int i = lastSucc; i < fileBufferSize; i++)
+                for (int i = lastSucc; i < maxFrag; i++)
                 {
                     if (succFrags[i] == true)
                     {
