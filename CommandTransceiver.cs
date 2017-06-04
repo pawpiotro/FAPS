@@ -28,10 +28,10 @@ namespace FAPS
                 if (nf.needMoreData())
                 {
                     rec = 0;
-                    do
+                    while (rec < 4)
                     {
                         rec += socket.Receive(nf.Size, rec, 4 - rec, SocketFlags.None);
-                    } while (rec < 4);
+                    }
                     nf.nSize = IPAddress.NetworkToHostOrder(nf.nSize);
                     if (nf.nSize > 25000)
                     {
@@ -39,10 +39,10 @@ namespace FAPS
                     }
                     nf.Data = new byte[nf.nSize];
                     rec = 0;
-                    do
+                    while (rec < nf.nSize)
                     {
                         rec += socket.Receive(nf.Data, rec, nf.nSize - rec, SocketFlags.None);
-                    } while (rec < nf.nSize);
+                    }
                 }
                 return nf;
             }
