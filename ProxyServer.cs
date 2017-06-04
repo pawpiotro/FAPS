@@ -84,7 +84,7 @@ namespace FAPS
                 
                 monitor = new Middleman(ctsMiddleman.Token);
 
-                scheduler = new Scheduler(monitor, ctsScheduler.Token);
+                //scheduler = new Scheduler(monitor, ctsScheduler.Token);
                 listener = new Listener(args[0], args[1], monitor, ctsListener.Token);
 
                 menu();
@@ -98,6 +98,7 @@ namespace FAPS
             {
                 Console.WriteLine("Not enough arguments.");
             }
+            
             Console.WriteLine("\nPress ENTER to exit...");
             Console.Read();
             return 0;

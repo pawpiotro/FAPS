@@ -24,7 +24,7 @@ namespace FAPS
             {
                 int rec = socket.Receive(nf.Code);
                 if (rec.Equals(0))
-                    throw new Exception();
+                    throw new Exception("Not responding");
                 if (nf.needMoreData())
                 {
                     rec = 0;
@@ -35,7 +35,7 @@ namespace FAPS
                     nf.nSize = IPAddress.NetworkToHostOrder(nf.nSize);
                     if (nf.nSize > 25000)
                     {
-                        throw new SocketException();
+                        throw new Exception("File too big");
                     }
                     nf.Data = new byte[nf.nSize];
                     rec = 0;
@@ -49,6 +49,10 @@ namespace FAPS
             catch (SocketException se)
             {
                 throw new SocketException(se.ErrorCode);
+            }
+            catch(Exception e)
+            {
+                throw new Exception(e.Message);
             }
         }
 
@@ -109,7 +113,7 @@ namespace FAPS
             {
                 int sent = socket.Send(nf.Code);
                 if (sent.Equals(0))
-                    throw new Exception();
+                    throw new Exception("Not responding");
                 if (nf.needMoreData())
                 {
                     sent = 0;
@@ -131,6 +135,10 @@ namespace FAPS
             catch (SocketException se)
             {
                 throw new SocketException(se.ErrorCode);
+            }
+            catch (Exception e)
+            {
+                throw new Exception(e.Message);
             }
         }
 

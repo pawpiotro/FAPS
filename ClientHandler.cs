@@ -43,7 +43,8 @@ namespace FAPS
                     socket.Shutdown(SocketShutdown.Both);
                     socket.Close();
                 }
-            } catch(SocketException se)
+            }
+            catch (SocketException se)
             {
                 Console.WriteLine(se.ToString());
             } //catch(ObjectDisposedException ode)
@@ -75,8 +76,9 @@ namespace FAPS
                 }
                 catch(Exception e)
                 {
-                    Console.WriteLine("CH " + cmdProc.ID + ": Receiver: Connection with client closed");
-                    break;
+                    Console.WriteLine("CH " + cmdProc.ID + ": Receiver: " + e.Message);
+                    if(e.Message.Equals("Not responding"))
+                        break;
                 }
             }
 
@@ -111,8 +113,9 @@ namespace FAPS
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("CH " + cmdProc.ID + ": Sender: Connection with client closed");
-                    break;
+                    Console.WriteLine("CH " + cmdProc.ID + ": Receiver: " + e.Message);
+                    if (e.Message.Equals("Not responding"))
+                        break;
                 }
             }
 
