@@ -240,11 +240,13 @@ namespace FAPS
                 Console.WriteLine("Pobieram chunk...");
                 monitor.addDownloadChunk((CommandChunk) recvd, dwnfrag);
                 scheduler.success(dwnfrag);
+                scheduler.wakeSch();
             }
             else
             {
                 Console.WriteLine("DSH: Unexpected server response during download: " + recvd.GetType());
                 scheduler.addFailed((CommandDownload) cmd);
+                scheduler.wakeSch();
             }
         }
 
@@ -260,16 +262,20 @@ namespace FAPS
             Command recvd = cmdTrans.getCmd();
             if (recvd.GetType().Equals(typeof(CommandAccept)))
             {
-                upl.CmdProc.Incoming.Add(recvd, token);
-                // Upload all the chunks
                 Console.WriteLine("Upload zaakceptowany");
+                scheduler.ConfirmAccept();
+                // Upload all the chunks
+                int frag = 0;
                 //for (int i = 0; i < fragments; i++)
                 while (sentSize < upl.Size)
                 {
-                    chunk = monitor.UploadChunkQueue.Take(token);
+                    chunk = scheduler.takeUplChunk(frag); ;
                     Console.WriteLine("Wysylam chunk o rozmiarze: " + chunk.Data.Length);
                     cmdTrans.sendCmd(chunk);
+                    scheduler.uplSucc(frag);
+                    scheduler.wakeSch();
                     sentSize += chunk.Data.Length;
+                    frag++;
                 }
                 Console.WriteLine("Wyslano wszystkie chunki.");
                 recvd = cmdTrans.getCmd();
@@ -277,14 +283,14 @@ namespace FAPS
                     Console.WriteLine("DSH: Unexpected server response after upload: " + recvd.GetType());
                 else
                 {
+                    CommandCommit commit = scheduler.waitForCommit();
                     Console.WriteLine("Wysylam commit...");
-                    CommandCommit commit = new CommandCommit();
                     cmdTrans.sendCmd(commit);
                     recvd = cmdTrans.getCmd();
                     if (!recvd.GetType().Equals(typeof(CommandCommitAck)))
                         Console.WriteLine("DSH: Unexpected server response after upload commit: " + recvd.GetType());
                     else
-                        Console.WriteLine("Potwierdzono commit.");
+                        scheduler.ConfirmCommit();
                 }
             }
             else
@@ -319,11 +325,11 @@ namespace FAPS
             }
             if (cmd.GetType().Equals(typeof(CommandList)))
             {
-                Console.WriteLine("Wysylam list...");
+                Console.WriteLine("Wysylam list do serwera...");
                 Command recvd = cmdTrans.getCmd();
                 if (recvd.GetType().Equals(typeof(CommandChunk)))
                 {
-                    Console.WriteLine("Wysylam list...");
+                    Console.WriteLine("Wysylam list do klienta...");
                     ((CommandList)cmd).CmdProc.Incoming.Add(recvd, token);
                 }
                 else
