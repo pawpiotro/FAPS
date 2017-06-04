@@ -328,6 +328,7 @@ namespace FAPS
             {
                 Console.WriteLine("Wysylam list do serwera...");
                 Command recvd = cmdTrans.getCmd();
+                Console.WriteLine("Dostalem odpowiedz na List");
                 if (recvd.GetType().Equals(typeof(CommandChunk)))
                 {
                     Console.WriteLine("Wysylam list do klienta...");
