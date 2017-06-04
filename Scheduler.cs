@@ -133,13 +133,17 @@ namespace FAPS
 
         private CommandDownload makeChunk(CommandDownload cmd, int frag)
         {
+            Console.WriteLine("Tworze nowy chunk");
             CommandDownload newcmd = new CommandDownload(cmd);
+            //CommandDownload newcmd = cmd;
+            Console.WriteLine("Download dla "+cmd.User +"Chunk dla " + newcmd.User);
             newcmd.Begin = frag * fragSize;
             newcmd.End = (frag + 1) * fragSize;
             if (newcmd.Begin > cmd.End || newcmd.Begin < 0)
                 return null;
             if (newcmd.End > cmd.End)
                 newcmd.End = cmd.End;
+            Console.WriteLine("Stworzono chunk");
             return newcmd;
         }
 
@@ -157,11 +161,13 @@ namespace FAPS
 
             CommandDownload dwn;
             DataServerHandler server;
+            Console.WriteLine("Zaczynam Download");
             while (true)
             {
                 server = avaibleServer();
                 if (failedFrags.Count > 0)      // There are some fragments that need to be redownloaded
                 {
+                    Console.WriteLine("Zfailowany fragment");
                     dwn = failedFrags.Take(token);
                     server.addDownload(dwn, dwn.Begin / fragSize);
                 }
@@ -172,14 +178,18 @@ namespace FAPS
                         waitForDwn();
                         continue;
                     }
+                    Console.WriteLine("Pobieram nowy chunk");
                     dwn = makeChunk(cmd, lastFrag);
                     server.addDownload(dwn, lastFrag);
                     lastFrag++;
                 }
                 else if (allSucc())
+                {
                     // All fragments have started downloading and no one failed yet,
                     // so check if they all succeeded
+                    Console.WriteLine("Pobieranie zakonczone");
                     break;
+                }
             }
         }
 
@@ -207,7 +217,6 @@ namespace FAPS
                 uplFrags[i] = 0;
             for (int i = 0; i < fileBufferSize && i < maxFrag; i++)
             {
-                Console.WriteLine("----------- i: " + i + " size: " +fileBufferSize);
                 uplBuff[i] = monitor.UploadChunkQueue.Take(token);  // Ready chunks queue
             }
             lock(dshLock)
@@ -215,8 +224,7 @@ namespace FAPS
                 Monitor.PulseAll(dshLock);
             }
 
-
-            Console.WriteLine("Wchodze w petle3");
+            
             // Start uploading chunks
             while (true)
             {
@@ -227,7 +235,6 @@ namespace FAPS
                     Console.WriteLine("Obudzony 1");
                     if (lastSucc >= maxFrag)
                     {
-                        Console.WriteLine("LastSucc = maxFrag");
                         // All chunks taken by DSHs, wait for all CommitRdys
                         while (waitingForCommit < serverList.Count)
                             Monitor.Wait(schLock);
@@ -247,7 +254,6 @@ namespace FAPS
                     }
                     lock (dshLock)
                     {
-                        Console.WriteLine("LastSucc: " + lastSucc + " maxFrag: " + maxFrag);
                         if ((int)uplFrags[lastSucc] == serverList.Count)
                         {
                             Console.WriteLine("wszystkie zassały chunka");

@@ -37,6 +37,7 @@ namespace FAPS
             token = _token;
             address = _address;
             port = _port;
+            state = States.idle;
         }
 
         private void CancelAsync()
@@ -120,23 +121,31 @@ namespace FAPS
             {
                 try
                 {
+                    Console.WriteLine("DSH: Czekam na SCH");
                     waitForSch();
+                    Console.WriteLine("DSH: Obudzony");
                     switch (state)
                     {
                         case States.download:
                             // Here goes download
+                            Console.WriteLine("DSH: Dostalem download");
                             startDownload();
                             state = States.idle;
                             break;
                         case States.upload:
                             // Here goes upload
+                            Console.WriteLine("DSH: Dostalem Upload");
                             startUpload();
                             state = States.idle;
                             break;
                         case States.other:
                             // Here goes Command send
+                            Console.WriteLine("DSH: Dostalem other");
                             startCommand();
                             state = States.idle;
+                            break;
+                        default:
+                            Console.WriteLine("DSH: Co to tu robi");
                             break;
                     }
                 }
@@ -199,10 +208,12 @@ namespace FAPS
         {
             lock (cmdLock)
             {
+                Console.WriteLine("DSH: Dodany download");
                 dwnfrag = fragment;
                 cmd = _cmd;
                 state = States.download;
-                Monitor.Pulse(cmdLock);
+                Monitor.PulseAll(cmdLock);
+                Console.WriteLine("DSH: Zpulsowano");
                 return true;
             }
         }
@@ -352,6 +363,7 @@ namespace FAPS
                 while (state == States.idle)
                 {
                     Monitor.Wait(cmdLock);
+                    Console.WriteLine("DSH Zla proba budzenia");
                 }
                 Console.WriteLine("DSH working");
                 Console.WriteLine(state);
