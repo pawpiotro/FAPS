@@ -35,7 +35,7 @@ namespace FAPS
                     nf.nSize = IPAddress.NetworkToHostOrder(nf.nSize);
                     if (nf.nSize > 25000)
                     {
-                        throw new SocketException();
+                        throw new Exception();
                     }
                     nf.Data = new byte[nf.nSize];
                     rec = 0;
@@ -49,6 +49,10 @@ namespace FAPS
             catch (SocketException se)
             {
                 throw new SocketException(se.ErrorCode);
+            }
+            catch(Exception e)
+            {
+                throw new Exception();
             }
         }
 
