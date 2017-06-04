@@ -101,11 +101,13 @@ namespace FAPS
             }
             if (cmd.GetType().Equals(typeof(CommandRename)))
             {
+                ((CommandRename)cmd).CmdProc = this;
                 monitor.queueMisc(cmd);
                 return;
             }
             if (cmd.GetType().Equals(typeof(CommandDelete)))
             {
+                ((CommandDelete)cmd).CmdProc = this;
                 monitor.queueMisc(cmd);
                 return;
             }

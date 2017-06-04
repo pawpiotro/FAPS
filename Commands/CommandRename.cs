@@ -7,10 +7,12 @@ namespace FAPS.Commands
         private String filename;
         private String newFilename;
         private String user;
+        private CommandProcessor cmdProc;
 
         public String User { get { return user; } set { user = value; } }
         public String Filename { get { return filename; } set { filename = value; } }
         public String NewFilename { get { return newFilename; } set { newFilename = value; } }
+        public CommandProcessor CmdProc { get { return cmdProc; } set { cmdProc = value; } }
 
         public CommandRename(NetworkFrame nf) : base(nf)
         {

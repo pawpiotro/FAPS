@@ -6,9 +6,11 @@ namespace FAPS.Commands
     {
         private String filename;
         private String user;
+        private CommandProcessor cmdProc;
 
         public String Filename { get { return filename; } set { filename = value; } }
         public String User { get { return user; } set { user = value; } }
+        public CommandProcessor CmdProc { get { return cmdProc; } set { cmdProc = value; } }
 
         public CommandDelete(NetworkFrame nf) : base(nf)
         {
