@@ -296,7 +296,7 @@ namespace FAPS
                 commited = 0;
                 commit = null;
                 Console.WriteLine("Zuploadowano plik na kazdy serwer");
-                cmd.CmdProc.Incoming.Add(new CommandAccept(), token);
+                tosend.CmdProc.Incoming.Add(new CommandAccept(), token);
             }
         }
 
