@@ -233,7 +233,8 @@ namespace FAPS
                             Monitor.Wait(schLock);
                         commit = new CommandCommit();
                         Console.WriteLine("Commit gotowy");
-                        Monitor.PulseAll(dshLock);
+                        lock(dshLock)
+                            Monitor.PulseAll(dshLock);
                         // Submit commit, wait for all CommitAcks
                         while (commited < serverList.Count)
                             Monitor.Wait(schLock);
@@ -241,6 +242,7 @@ namespace FAPS
                         commited = 0;
                         commit = null;
                         Console.WriteLine("Zuploadowano plik na kazdy serwer");
+                        cmd.CmdProc.Incoming.Add(new CommandAccept(), token);
                         break;
                     }
                     lock (dshLock)
@@ -248,9 +250,11 @@ namespace FAPS
                         Console.WriteLine("LastSucc: " + lastSucc + " maxFrag: " + maxFrag);
                         if ((int)uplFrags[lastSucc] == serverList.Count)
                         {
+                            Console.WriteLine("wszystkie zassały chunka");
                             // All DSHs uploaded one chunk, swap it with a new one
                             uplFrags[lastSucc]++;
-                            uplBuff[lastSucc % fileBufferSize] = monitor.UploadChunkQueue.Take(token);
+                            if (lastSucc < maxFrag - 1)
+                                uplBuff[lastSucc % fileBufferSize] = monitor.UploadChunkQueue.Take(token);
                             lastSucc++;
                         }
                         Console.WriteLine("#############Ide spac 2");
