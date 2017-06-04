@@ -283,6 +283,7 @@ namespace FAPS
                     Console.WriteLine("DSH: Unexpected server response after upload: " + recvd.GetType());
                 else
                 {
+                    Console.WriteLine("Czekam na commit...");
                     CommandCommit commit = scheduler.waitForCommit();
                     Console.WriteLine("Wysylam commit...");
                     cmdTrans.sendCmd(commit);

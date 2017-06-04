@@ -222,7 +222,9 @@ namespace FAPS
             {
                 lock (schLock)
                 {
+                    Console.WriteLine("#############Ide spac 1");
                     Monitor.Wait(schLock);
+                    Console.WriteLine("Obudzony 1");
                     if (lastSucc >= maxFrag)
                     {
                         Console.WriteLine("LastSucc = maxFrag");
@@ -243,6 +245,7 @@ namespace FAPS
                     }
                     lock (dshLock)
                     {
+                        Console.WriteLine("LastSucc: " + lastSucc + " maxFrag: " + maxFrag);
                         if ((int)uplFrags[lastSucc] == serverList.Count)
                         {
                             // All DSHs uploaded one chunk, swap it with a new one
@@ -250,7 +253,9 @@ namespace FAPS
                             uplBuff[lastSucc % fileBufferSize] = monitor.UploadChunkQueue.Take(token);
                             lastSucc++;
                         }
+                        Console.WriteLine("#############Ide spac 2");
                         Monitor.PulseAll(dshLock);
+                        Console.WriteLine("Obudzony 2");
                     }
                 }
             }
