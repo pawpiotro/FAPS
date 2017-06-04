@@ -99,9 +99,9 @@ namespace FAPS
             {
                throw new SocketException(se.ErrorCode);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                throw new Exception();
+                throw new Exception(e.Message);
             }
         }
 
