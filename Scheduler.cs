@@ -274,13 +274,11 @@ namespace FAPS
         private void startOther(Command cmd)
         {
             sendEveryone(cmd);
-            CommandRename tosend;
-            if (cmd.GetType().Equals(typeof(CommandRename)))
-                tosend = (CommandRename)cmd;
-            else if (cmd.GetType().Equals(typeof(CommandDelete)))
-                tosend = (CommandRename)cmd;
-            else
+            if (!cmd.GetType().Equals(typeof(CommandRename)) && !cmd.GetType().Equals(typeof(CommandDelete)))
+            {
+                Console.WriteLine("Nieprawidlowy command");
                 return;
+            }
             lock (schLock)
             {
                 while (waitingForCommit < serverList.Count)
@@ -295,8 +293,11 @@ namespace FAPS
                 waitingForCommit = 0;
                 commited = 0;
                 commit = null;
-                Console.WriteLine("Zuploadowano plik na kazdy serwer");
-                tosend.CmdProc.Incoming.Add(new CommandAccept(), token);
+                Console.WriteLine("Dostarczono komende na kazdy serwer");
+                if (cmd.GetType().Equals(typeof(CommandRename)))
+                    ((CommandRename)cmd).CmdProc.Incoming.Add(new CommandAccept(), token);
+                else if (cmd.GetType().Equals(typeof(CommandDelete)))
+                    ((CommandDelete)cmd).CmdProc.Incoming.Add(new CommandAccept(), token);
             }
         }
 
