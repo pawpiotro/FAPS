@@ -19,7 +19,8 @@ namespace FAPS
         private bool[] succFrags;
         private byte[] uplFrags;
         private CommandChunk[] uplBuff;
-        private CancellationToken token;
+        private CancellationTokenSource linkedsrc, dshtksrc = new CancellationTokenSource();
+        private CancellationToken proxytoken, dshtoken, token;
         private CommandProcessor currentClient;
         private CommandCommit commit = null;
         private int waitingForCommit = 0, commited = 0, accepted = 0;
@@ -30,7 +31,10 @@ namespace FAPS
         public Scheduler(Middleman _monitor, CancellationToken _token)
         {
             monitor = _monitor;
-            token = _token;
+            proxytoken = _token;
+            dshtoken = dshtksrc.Token;
+            linkedsrc = CancellationTokenSource.CreateLinkedTokenSource(proxytoken, dshtoken);
+            token = linkedsrc.Token;
             fragSize = 1*8*1024;
             fileBufferSize = 10;
 
@@ -63,10 +67,11 @@ namespace FAPS
         {
             var tmpServerList = loadServerList();
             DataServerHandler dataServer;
+            int i = 0;
             foreach(Tuple<String, String> t in tmpServerList)
             {
                 //Console.WriteLine("SCHEDULER: " + t.Item1 + ":" + t.Item2);
-                dataServer = new DataServerHandler(monitor, this, token, t.Item1, Int32.Parse(t.Item2));
+                dataServer = new DataServerHandler(monitor, this, token, t.Item1, Int32.Parse(t.Item2), i++);
                 dataServer.startService();
                 serverList.Add(dataServer);
             }
@@ -75,13 +80,15 @@ namespace FAPS
 
         public void run()
         {
+            CancellationTokenRegistration ctr = proxytoken.Register(CancelAsync);
             connectToServers();
 
-            while (!token.IsCancellationRequested)
+            while (!proxytoken.IsCancellationRequested)
             {
                 Command cmd = monitor.Fetch();
                 processCommand(cmd);
             }
+            ctr.Dispose();
         }
 
 
@@ -162,9 +169,13 @@ namespace FAPS
             CommandDownload dwn;
             DataServerHandler server;
             Console.WriteLine("Zaczynam Download");
-            while (true)
+            while (!token.IsCancellationRequested)
             {
                 server = avaibleServer();
+                if (token.IsCancellationRequested)
+                {
+                    break;
+                }
                 if (failedFrags.Count > 0)      // There are some fragments that need to be redownloaded
                 {
                     Console.WriteLine("Zfailowany fragment");
@@ -215,7 +226,7 @@ namespace FAPS
             lastSucc = 0;
             for (int i = 0; i < maxFrag; i++)
                 uplFrags[i] = 0;
-            for (int i = 0; i < fileBufferSize && i < maxFrag; i++)
+            for (int i = 0; i < fileBufferSize && i < maxFrag && !token.IsCancellationRequested; i++)
             {
                 uplBuff[i] = monitor.UploadChunkQueue.Take(token);  // Ready chunks queue
             }
@@ -226,7 +237,7 @@ namespace FAPS
 
             
             // Start uploading chunks
-            while (true)
+            while (!token.IsCancellationRequested)
             {
                 lock (schLock)
                 {
@@ -236,15 +247,23 @@ namespace FAPS
                     if (lastSucc >= maxFrag)
                     {
                         // All chunks taken by DSHs, wait for all CommitRdys
-                        while (waitingForCommit < serverList.Count)
+                        while (waitingForCommit < serverList.Count && !token.IsCancellationRequested)
                             Monitor.Wait(schLock);
+                        if (token.IsCancellationRequested)
+                        {
+                            break;
+                        }
                         commit = new CommandCommit();
                         Console.WriteLine("Commit gotowy");
                         lock(dshLock)
                             Monitor.PulseAll(dshLock);
                         // Submit commit, wait for all CommitAcks
-                        while (commited < serverList.Count)
+                        while (commited < serverList.Count && !token.IsCancellationRequested)
                             Monitor.Wait(schLock);
+                        if (token.IsCancellationRequested)
+                        {
+                            break;
+                        }
                         waitingForCommit = 0;
                         commited = 0;
                         commit = null;
@@ -269,6 +288,7 @@ namespace FAPS
                     }
                 }
             }
+            // Token is cancelled
         }
 
         private void startOther(Command cmd)
@@ -281,15 +301,23 @@ namespace FAPS
             }
             lock (schLock)
             {
-                while (waitingForCommit < serverList.Count)
+                while (waitingForCommit < serverList.Count && !token.IsCancellationRequested)
                     Monitor.Wait(schLock);
+                if (token.IsCancellationRequested)
+                {
+                    return;
+                }
                 commit = new CommandCommit();
                 Console.WriteLine("Commit gotowy");
                 lock (dshLock)
                     Monitor.PulseAll(dshLock);
                 // Submit commit, wait for all CommitAcks
-                while (commited < serverList.Count)
+                while (commited < serverList.Count && !token.IsCancellationRequested)
                     Monitor.Wait(schLock);
+                if (token.IsCancellationRequested)
+                {
+                    return;
+                }
                 waitingForCommit = 0;
                 commited = 0;
                 commit = null;
@@ -303,13 +331,14 @@ namespace FAPS
 
         private DataServerHandler avaibleServer()
         {
-            while (true)
+            while (!token.IsCancellationRequested)
             {
                 foreach (DataServerHandler server in serverList)
                     if (server.State == DataServerHandler.States.idle)
                         return server;
                 waitForDwn();
             }
+            return null;
         }
 
         public void addFailed(CommandDownload cmd)
@@ -345,11 +374,12 @@ namespace FAPS
                 if (min < 0)
                     return uplBuff[frag];
                 // Chunk index is bigger than buffer size, so check if it's in buffer
-                while (true)
+                while (!token.IsCancellationRequested)
                     if ((int)uplFrags[min] == serverList.Count + 1)
                         return uplBuff[frag % fileBufferSize];
                     else
                         Monitor.Wait(dshLock);
+                return null;
             }
         }
 
@@ -366,6 +396,8 @@ namespace FAPS
             lock (schLock)
             {
                 Monitor.Wait(schLock);
+                if (token.IsCancellationRequested)
+                    return;
                 // Has the next fragment in order finished downloading?
                 for (int i = lastSucc; i < maxFrag; i++)
                 {
@@ -394,7 +426,7 @@ namespace FAPS
             {
                 waitingForCommit++;
                 wakeSch();
-                while (commit == null)
+                while (commit == null && !token.IsCancellationRequested)
                     Monitor.Wait(dshLock);
                 return commit;
             }
@@ -431,6 +463,27 @@ namespace FAPS
                 Monitor.Pulse(dshLock);
             }
         }
+        public void wakeAllDsh()
+        {
+            lock (dshLock)
+            {
+                Monitor.PulseAll(dshLock);
+            }
+        }
 
+        public void cancel()
+        {
+            foreach (DataServerHandler server in serverList)
+                server.cancel();
+            dshtksrc.Cancel();
+            wakeSch();
+            wakeAllDsh();
+        }
+        public void CancelAsync()
+        {
+            Console.WriteLine("SCH: CANCEL");
+            foreach (DataServerHandler server in serverList)
+                server.disconnect();
+        }
     }
 }

@@ -17,19 +17,20 @@ namespace FAPS
         private Socket socket;
         private string address;
         private int port;
+        private int serverID;
         
         public bool busy = false;
         private Command cmd = null;
         private object cmdLock = new object();
         private int dwnfrag;
-        public enum States {download, dwnwait, upload, uplwait, other, idle};
+        public enum States {download, dwnwait, upload, uplwait, other, idle, cancel};
         private States state = States.idle;
 
         public States State { get { return state; } }
 
         private CommandTransceiver cmdTrans;
 
-        public DataServerHandler(Middleman _monitor, Scheduler _scheduler, CancellationToken _token, string _address, int _port)
+        public DataServerHandler(Middleman _monitor, Scheduler _scheduler, CancellationToken _token, string _address, int _port, int _id)
         {
             monitor = _monitor;
             scheduler = _scheduler;
@@ -37,11 +38,12 @@ namespace FAPS
             address = _address;
             port = _port;
             state = States.idle;
+            serverID = _id;
         }
 
         private void CancelAsync()
         {
-            Console.WriteLine("DSH: CANCEL");
+            Console.WriteLine("DSH" + serverID + ": CANCEL");
             try
             {
                 socket.Shutdown(SocketShutdown.Both);
@@ -56,10 +58,10 @@ namespace FAPS
         public void startService()
         {
             if (!connect())
-                Console.WriteLine("Login to Data Server Failed");
+                Console.WriteLine("DSH" + serverID + "Login to Data Server Failed");
             else
             {
-                Console.WriteLine("Logged in to data server");
+                Console.WriteLine("DSH" + serverID + "Logged in to data server");
                 Task.Factory.StartNew(runSender, token);
                 //Task.Factory.StartNew(runReceiver, token);
             }
@@ -79,7 +81,7 @@ namespace FAPS
             try
             {
                 socket.Connect(remoteEP);
-                Console.WriteLine("Socket connected to {0}",
+                Console.WriteLine("DSH" + serverID + "Socket connected to {0}",
                             socket.RemoteEndPoint.ToString());
 
                 cmdTrans = new CommandTransceiver(socket, false);
@@ -87,16 +89,31 @@ namespace FAPS
             }
             catch (SocketException se)
             {
-                Console.WriteLine("SocketException : {0}", se.ToString());
+                Console.WriteLine("DSH" + serverID + "SocketException : {0}", se.ToString());
                 return false;
             }
             catch (Exception e)
             {
-                Console.WriteLine("Unexpected exception : {0}", e.ToString());
+                Console.WriteLine("DSH" + serverID + "Unexpected exception : {0}", e.ToString());
                 return false;
             }
         }
-        
+        public void disconnect()
+        {
+            try
+            {
+                if (socket.Connected)
+                {
+                    socket.Shutdown(SocketShutdown.Both);
+                    socket.Close();
+                }
+            }
+            catch (SocketException se)
+            {
+                Console.WriteLine(se.ToString());
+            }
+        }
+
         private bool logIn()
         {
             string user = "user2";
@@ -123,36 +140,39 @@ namespace FAPS
                     {
                         if (connect())
                         { 
-                        Console.WriteLine("RECONNECTED");
-                        needReconnect = false;
+                            Console.WriteLine("DSH" + serverID + "RECONNECTED");
+                            needReconnect = false;
                         }
                     }
                     else {
-                        Console.WriteLine("DSH: Czekam na SCH");
+                        Console.WriteLine("DSH" +serverID + ": Czekam na SCH");
                         waitForSch();
-                        Console.WriteLine("DSH: Obudzony");
+                        Console.WriteLine("DSH" + serverID + ": Obudzony");
                         switch (state)
                         {
                             case States.download:
                                 // Here goes download
-                                Console.WriteLine("DSH: Dostalem download");
+                                Console.WriteLine("DSH" + serverID + ": Dostalem download");
                                 startDownload();
                                 state = States.idle;
                                 break;
                             case States.upload:
                                 // Here goes upload
-                                Console.WriteLine("DSH: Dostalem Upload");
+                                Console.WriteLine("DSH" + serverID + ": Dostalem Upload");
                                 startUpload();
                                 state = States.idle;
                                 break;
                             case States.other:
                                 // Here goes Command send
-                                Console.WriteLine("DSH: Dostalem other");
+                                Console.WriteLine("DSH" + serverID + ": Dostalem other");
                                 startCommand();
                                 state = States.idle;
                                 break;
+                            case States.cancel:
+                                state = States.idle;
+                                break;
                             default:
-                                Console.WriteLine("DSH: Co to tu robi");
+                                Console.WriteLine("DSH" + serverID + ": Co to tu robi");
                                 break;
                         }
                     }
@@ -161,18 +181,35 @@ namespace FAPS
                 {
                     if (state == States.download)
                         scheduler.addFailed((CommandDownload) cmd);
-                    if (se.ErrorCode.Equals(10054))
+                    if (state == States.upload || state == States.other)
+                        scheduler.cancel();
+                    if (socket.Connected)
+                        rollback();
+                    //if (se.ErrorCode.Equals(10054))
+                    else
+                    {
+                        Console.WriteLine("Connection with Data Server " + serverID + " closed: SocketException");
                         needReconnect = true;
-                        //break;
+                    }
+                    //break;
+                    state = States.idle;
                 }
                 catch (Exception e)
                 {
                     if (state == States.download)
                         scheduler.addFailed((CommandDownload)cmd);
-                    Console.WriteLine("Connection with Data Server closed");
-                    if (e.Message.Equals("Not responding"))
+                    if (state == States.upload || state == States.other)
+                        scheduler.cancel();
+                    if (socket.Connected)
+                        rollback();
+                    //if (e.Message.Equals("Not responding"))
+                    else
+                    {
+                        Console.WriteLine("Connection with Data Server " + serverID + " closed: Exception");
                         needReconnect = true;
-                        //break;
+                    }
+                    //break;
+                    state = States.idle;
                 }
             }
             if (socket.Connected)
@@ -180,7 +217,7 @@ namespace FAPS
                 socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
             }
-            Console.WriteLine("Server handler sender thread has ended");
+            Console.WriteLine("Server handler " + serverID + " sender thread has ended");
         }
 
         private void runReceiver()
@@ -308,6 +345,11 @@ namespace FAPS
                 {
                     Console.WriteLine("Czekam na commit...");
                     CommandCommit commit = scheduler.waitForCommit();
+                    if (state == States.cancel)
+                    {
+                        rollback();
+                        return;
+                    }
                     Console.WriteLine("Wysylam commit...");
                     cmdTrans.sendCmd(commit);
                     recvd = cmdTrans.getCmd();
@@ -338,6 +380,11 @@ namespace FAPS
                     if (recvd.GetType().Equals(typeof(CommandCommitRdy)))
                     {
                         CommandCommit commit = scheduler.waitForCommit();
+                        if (state == States.cancel)
+                        {
+                            rollback();
+                            return;
+                        }
                         cmdTrans.sendCmd(commit);
                         Console.WriteLine("Wysylam commit...");
                         recvd = cmdTrans.getCmd();
@@ -373,6 +420,23 @@ namespace FAPS
                 Console.WriteLine("SH: ERROR: " + ((CommandError)cmd).ErrorCode);
                 return;
             }
+        }
+
+        private void rollback()
+        {
+            CommandRollback rollback =  new CommandRollback();
+            cmdTrans.sendCmd(rollback);
+        }
+
+        private void error(int code)
+        {
+            CommandError error = new CommandError(code);
+            cmdTrans.sendCmd(error);
+        }
+
+        public void cancel()
+        {
+            state = States.cancel;
         }
 
         private void waitForSch()
