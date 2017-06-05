@@ -23,7 +23,7 @@ namespace FAPS
         private Command cmd = null;
         private object cmdLock = new object();
         private int dwnfrag;
-        public enum States {download, dwnwait, upload, uplwait, other, idle, cancel};
+        public enum States {download, dwnwait, upload, uplwait, other, cmdwait, idle, cancel};
         private States state = States.idle;
 
         public States State { get { return state; } }
@@ -65,10 +65,10 @@ namespace FAPS
         public void startService()
         {
             if (!connect())
-                Console.WriteLine("DSH" + serverID + "Login to Data Server Failed");
+                Console.WriteLine("DSH" + serverID + " Login to Data Server Failed");
             else
             {
-                Console.WriteLine("DSH" + serverID + "Logged in to data server");
+                Console.WriteLine("DSH" + serverID + " Logged in to data server");
                 Task.Factory.StartNew(runSender, token);
                 //Task.Factory.StartNew(runReceiver, token);
             }
@@ -88,7 +88,7 @@ namespace FAPS
             try
             {
                 socket.Connect(remoteEP);
-                Console.WriteLine("DSH" + serverID + "Socket connected to {0}",
+                Console.WriteLine("DSH" + serverID + " Socket connected to {0}",
                             socket.RemoteEndPoint.ToString());
 
                 cmdTrans = new CommandTransceiver(socket, false);
@@ -96,17 +96,18 @@ namespace FAPS
             }
             catch (SocketException se)
             {
-                Console.WriteLine("DSH" + serverID + "SocketException : {0}", se.ToString());
+                Console.WriteLine("DSH" + serverID + " SocketException : {0}", se.ToString());
                 return false;
             }
             catch (Exception e)
             {
-                Console.WriteLine("DSH" + serverID + "Unexpected exception : {0}", e.ToString());
+                Console.WriteLine("DSH" + serverID + " Unexpected exception : {0}", e.ToString());
                 return false;
             }
         }
         public void disconnect()
         {
+            Console.WriteLine("DSH" + serverID + ": DISCONNECT");
             try
             {
                 if (socket.Connected)
@@ -136,7 +137,7 @@ namespace FAPS
 
         private void runSender()
         {
-            CancellationTokenRegistration ctr = token.Register(CancelAsync);
+            //CancellationTokenRegistration ctr = token.Register(CancelAsync);
 
             bool needReconnect = false;
             while (!token.IsCancellationRequested)
@@ -191,7 +192,10 @@ namespace FAPS
                     if (state == States.upload || state == States.other)
                         scheduler.cancel();
                     if (socket.Connected)
-                        rollback();
+                        if (state == States.uplwait || state == States.cmdwait)
+                            rollback();
+                        else
+                            error(1);
                     //if (se.ErrorCode.Equals(10054))
                     else
                     {
@@ -208,7 +212,10 @@ namespace FAPS
                     if (state == States.upload || state == States.other)
                         scheduler.cancel();
                     if (socket.Connected)
-                        rollback();
+                        if (state == States.uplwait || state == States.cmdwait)
+                            rollback();
+                        else
+                            error(1);
                     //if (e.Message.Equals("Not responding"))
                     else
                     {
@@ -296,15 +303,15 @@ namespace FAPS
         
         private void startDownload()
         {
-            Console.WriteLine("Rozpoczeto download");
             CommandDownload dwn = (CommandDownload)cmd;
+            Console.WriteLine("DSH" + serverID + " Rozpoczeto download chunka " + dwnfrag + " od " + dwn.Begin +" do " + dwn.End);
             cmdTrans.sendCmd(cmd);
             //state = States.dwnwait;
             Command recvd = cmdTrans.getCmd();
             if (recvd.GetType().Equals(typeof(CommandChunk)))
             {
                 // Pass the chunk
-                Console.WriteLine("Pobieram chunk...");
+                Console.WriteLine("DSH" + serverID + " Pobralem chunk " + dwnfrag + " o rozmiarze " + ((CommandChunk) recvd).Data.Length);
                 monitor.addDownloadChunk((CommandChunk) recvd, dwnfrag);
                 scheduler.success(dwnfrag);
                 scheduler.wakeSch();
@@ -336,20 +343,24 @@ namespace FAPS
                 //for (int i = 0; i < fragments; i++)
                 while (sentSize < upl.Size)
                 {
-                    chunk = scheduler.takeUplChunk(frag); ;
-                    Console.WriteLine("Wysylam chunk o rozmiarze: " + chunk.Data.Length);
+                    Console.WriteLine("DSH" + serverID + ": Zasysam nastepnego chunka.");
+                    chunk = scheduler.takeUplChunk(frag, serverID); ;
+                    Console.WriteLine("DSH" + serverID + ": Wysylam chunk o rozmiarze: " + chunk.Data.Length);
                     cmdTrans.sendCmd(chunk);
+                    Console.WriteLine("DSH" + serverID + ": Wyslano chunka.");
                     scheduler.uplSucc(frag);
                     scheduler.wakeSch();
+                    Console.WriteLine("DSH" + serverID + ": Obudzilem sch.");
                     sentSize += chunk.Data.Length;
                     frag++;
                 }
-                Console.WriteLine("Wyslano wszystkie chunki.");
+                Console.WriteLine("DSH" + serverID + ": Wyslano wszystkie chunki.");
                 recvd = cmdTrans.getCmd();
                 if (!recvd.GetType().Equals(typeof(CommandCommitRdy)))
                     Console.WriteLine("DSH: Unexpected server response after upload: " + recvd.GetType());
                 else
                 {
+                    state = States.uplwait;
                     Console.WriteLine("Czekam na commit...");
                     CommandCommit commit = scheduler.waitForCommit();
                     if (state == States.cancel)
@@ -363,7 +374,10 @@ namespace FAPS
                     if (!recvd.GetType().Equals(typeof(CommandCommitAck)))
                         Console.WriteLine("DSH: Unexpected server response after upload commit: " + recvd.GetType());
                     else
+                    {
                         scheduler.ConfirmCommit();
+                        state = States.idle;
+                    }
                 }
             }
             else
@@ -386,6 +400,7 @@ namespace FAPS
                     recvd = cmdTrans.getCmd();
                     if (recvd.GetType().Equals(typeof(CommandCommitRdy)))
                     {
+                        state = States.cmdwait;
                         CommandCommit commit = scheduler.waitForCommit();
                         if (state == States.cancel)
                         {
@@ -401,6 +416,7 @@ namespace FAPS
                         {
                             Console.WriteLine("Potwierdzono commit.");
                             scheduler.ConfirmCommit();
+                            state = States.idle;
                         }
                     }
                 }

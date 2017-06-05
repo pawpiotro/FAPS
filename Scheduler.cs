@@ -35,7 +35,7 @@ namespace FAPS
             dshtoken = dshtksrc.Token;
             linkedsrc = CancellationTokenSource.CreateLinkedTokenSource(proxytoken, dshtoken);
             token = linkedsrc.Token;
-            fragSize = 1*8*1024;
+            fragSize = 1*1024*4;
             fileBufferSize = 10;
 
             startService();
@@ -148,17 +148,16 @@ namespace FAPS
 
         private CommandDownload makeChunk(CommandDownload cmd, int frag)
         {
-            Console.WriteLine("Tworze nowy chunk");
+            Console.WriteLine("SCH: Tworze nowy chunk " +frag);
             CommandDownload newcmd = new CommandDownload(cmd);
             //CommandDownload newcmd = cmd;
-            Console.WriteLine("Download dla "+cmd.User +"Chunk dla " + newcmd.User);
             newcmd.Begin = frag * fragSize;
             newcmd.End = (frag + 1) * fragSize;
             if (newcmd.Begin > cmd.End || newcmd.Begin < 0)
                 return null;
             if (newcmd.End > cmd.End)
                 newcmd.End = cmd.End;
-            Console.WriteLine("Stworzono chunk");
+            Console.WriteLine("SCH: Chunk " + frag + " od " + newcmd.Begin + " do " + newcmd.End);
             return newcmd;
         }
 
@@ -176,7 +175,7 @@ namespace FAPS
 
             CommandDownload dwn;
             DataServerHandler server;
-            Console.WriteLine("Zaczynam Download");
+            Console.WriteLine("SCH: Zaczynam Download");
             while (!token.IsCancellationRequested)
             {
                 server = avaibleServer();
@@ -186,19 +185,20 @@ namespace FAPS
                 }
                 if (failedFrags.Count > 0)      // There are some fragments that need to be redownloaded
                 {
-                    Console.WriteLine("Zfailowany fragment");
                     dwn = failedFrags.Take(token);
+                    Console.WriteLine("SCH: Zfailowany fragment " + dwn.Begin);
                     server.addDownload(dwn, dwn.Begin / fragSize);
                 }
                 else if (lastFrag < maxFrag)    // Still missing few
                 {
                     if (lastFrag >= lastSucc + fileBufferSize)
                     {
+                        Console.WriteLine("SCH: Czekam na pobranie " + lastSucc);
                         waitForDwn();
                         continue;
                     }
-                    Console.WriteLine("Pobieram nowy chunk");
                     dwn = makeChunk(cmd, lastFrag);
+                    Console.WriteLine("SCH: Zlecam nowy chunk " + lastFrag +" "+ dwn.Begin+" "+dwn.End);
                     server.addDownload(dwn, lastFrag);
                     lastFrag++;
                 }
@@ -206,7 +206,7 @@ namespace FAPS
                 {
                     // All fragments have started downloading and no one failed yet,
                     // so check if they all succeeded
-                    Console.WriteLine("Pobieranie zakonczone");
+                    Console.WriteLine("SCH: Pobieranie zakonczone");
                     break;
                 }
             }
@@ -232,10 +232,12 @@ namespace FAPS
             maxFrag = (int)((cmd.Size + fragSize - 1)/ fragSize); // Round up
             uplFrags = new byte[maxFrag];
             lastSucc = 0;
+            Console.WriteLine("SCH: maxfrag = " + maxFrag + " buf size = "+fileBufferSize);
             for (int i = 0; i < maxFrag; i++)
                 uplFrags[i] = 0;
             for (int i = 0; i < fileBufferSize && i < maxFrag && !token.IsCancellationRequested; i++)
             {
+                Console.WriteLine("SCH: Wstawiam do kolejki chunka " + i);
                 uplBuff[i] = monitor.UploadChunkQueue.Take(token);  // Ready chunks queue
             }
             lock(dshLock)
@@ -247,53 +249,66 @@ namespace FAPS
             // Start uploading chunks
             while (!token.IsCancellationRequested)
             {
-                lock (schLock)
+                try
                 {
-                    Console.WriteLine("#############Ide spac 1");
-                    Monitor.Wait(schLock);
-                    Console.WriteLine("Obudzony 1");
-                    if (lastSucc >= maxFrag)
+                    lock (schLock)
                     {
-                        // All chunks taken by DSHs, wait for all CommitRdys
-                        while (waitingForCommit < serverList.Count && !token.IsCancellationRequested)
-                            Monitor.Wait(schLock);
-                        if (token.IsCancellationRequested)
+                        Console.WriteLine("#############Ide spac 1");
+                        Monitor.Wait(schLock);
+                        Console.WriteLine("Obudzony 1");
+                        if (lastSucc >= maxFrag)
                         {
+                            // All chunks taken by DSHs, wait for all CommitRdys
+                            while (waitingForCommit < serverList.Count && !token.IsCancellationRequested)
+                                Monitor.Wait(schLock);
+                            if (token.IsCancellationRequested)
+                            {
+                                break;
+                            }
+                            commit = new CommandCommit();
+                            Console.WriteLine("Commit gotowy");
+                            lock (dshLock)
+                                Monitor.PulseAll(dshLock);
+                            // Submit commit, wait for all CommitAcks
+                            while (commited < serverList.Count && !token.IsCancellationRequested)
+                                Monitor.Wait(schLock);
+                            if (token.IsCancellationRequested)
+                            {
+                                break;
+                            }
+                            waitingForCommit = 0;
+                            commited = 0;
+                            commit = null;
+                            Console.WriteLine("Zuploadowano plik na kazdy serwer");
+                            cmd.CmdProc.Incoming.Add(new CommandAccept(), token);
                             break;
                         }
-                        commit = new CommandCommit();
-                        Console.WriteLine("Commit gotowy");
-                        lock(dshLock)
+                        lock (dshLock)
+                        {
+                            if ((int)uplFrags[lastSucc] == serverList.Count)
+                            {
+                                Console.WriteLine("SCH: Wszystkie zassały chunka " + lastSucc);
+                                // All DSHs uploaded one chunk, swap it with a new one
+                                uplFrags[lastSucc]++;
+                                if (lastSucc < maxFrag)
+                                {
+                                    lastSucc++;
+                                    if (maxFrag - lastSucc > fileBufferSize)
+                                    {
+                                        Console.WriteLine("SCH: Wstawiam chunka na miejsce " + lastSucc % fileBufferSize);
+                                        uplBuff[lastSucc % fileBufferSize] = monitor.UploadChunkQueue.Take(token);
+                                    }
+                                }
+                            }
+                            Console.WriteLine("#############Ide spac 2");
                             Monitor.PulseAll(dshLock);
-                        // Submit commit, wait for all CommitAcks
-                        while (commited < serverList.Count && !token.IsCancellationRequested)
-                            Monitor.Wait(schLock);
-                        if (token.IsCancellationRequested)
-                        {
-                            break;
+                            Console.WriteLine("Obudzony 2");
                         }
-                        waitingForCommit = 0;
-                        commited = 0;
-                        commit = null;
-                        Console.WriteLine("Zuploadowano plik na kazdy serwer");
-                        cmd.CmdProc.Incoming.Add(new CommandAccept(), token);
-                        break;
                     }
-                    lock (dshLock)
-                    {
-                        if ((int)uplFrags[lastSucc] == serverList.Count)
-                        {
-                            Console.WriteLine("wszystkie zassały chunka");
-                            // All DSHs uploaded one chunk, swap it with a new one
-                            uplFrags[lastSucc]++;
-                            if (lastSucc < maxFrag - 1)
-                                uplBuff[lastSucc % fileBufferSize] = monitor.UploadChunkQueue.Take(token);
-                            lastSucc++;
-                        }
-                        Console.WriteLine("#############Ide spac 2");
-                        Monitor.PulseAll(dshLock);
-                        Console.WriteLine("Obudzony 2");
-                    }
+                }
+                catch(Exception e)
+                {
+                    //TEMP
                 }
             }
             // Token is cancelled
@@ -370,12 +385,16 @@ namespace FAPS
         {
             // Server handlers will invoke this upon succesfull download
             lock(schLock)
+            {
+                Console.WriteLine("Succes chunka " + fragment);
                 succFrags[fragment] = true;
+            }
         }
 
-        public CommandChunk takeUplChunk(int frag)
+        public CommandChunk takeUplChunk(int frag, int id)
         {
-            lock(dshLock)
+            Console.WriteLine("DSH" + id + " Biore chunka " + frag);
+            lock (dshLock)
             {
                 // Give DSH next chunk to upload
                 int min = frag - fileBufferSize;
@@ -412,6 +431,7 @@ namespace FAPS
                     if (succFrags[i] == true)
                     {
                         lastSucc = i + 1;
+                        Console.WriteLine("SCH: Wysyłam do klienta fragment " + lastSucc);
                         currentClient.Incoming.Add(monitor.takeDownloadChunk(i), token);
                     }
                     else
