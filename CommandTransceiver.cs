@@ -123,8 +123,7 @@ namespace FAPS
                         sent += socket.Send(nf.Size, sent, 4 - sent, SocketFlags.None);
                     } while (sent < 4);
                     int hSize = IPAddress.NetworkToHostOrder(nf.nSize);
-                    Console.WriteLine(hSize);
-                    Console.WriteLine(nf.sData);
+                    Console.WriteLine("Sent: Code="+ nf.nCode +" Size=" + hSize +" Data="+ nf.sData);
                     sent = 0;
                     do
                     {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Threading;
 
 namespace FAPS
@@ -20,13 +21,20 @@ namespace FAPS
 
         private static void changePort()
         {
-            
-            ctsListener.Cancel();  //stop service
             Console.WriteLine("new port:");
             String new_port = Console.ReadLine();
-            port = new_port;
-            ctsListener = new CancellationTokenSource();
-            listener = new Listener(address, port, monitor, ctsListener.Token);
+            if (isDigitsOnly(new_port))
+            {
+                ctsListener.Cancel();  //stop service
+                port = new_port;
+                ctsListener = new CancellationTokenSource();
+                Console.WriteLine("Starting listener on port " + port);
+                listener = new Listener(address, port, monitor, ctsListener.Token);
+            }
+            else
+            {
+                Console.WriteLine("Invalid port number");
+            }
         }
         private static void stopService()        // TEMP
         {
@@ -56,7 +64,6 @@ namespace FAPS
                     "1. Change port\n2. Stop service\n3. Start service\n0. Exit\n");
                 Console.WriteLine("===============");
                 input =  Console.ReadLine();
-                Console.WriteLine(input);
                 if (Int32.TryParse(input, out num))          // check if input is number;
                 {
                     switch (num)
@@ -99,7 +106,7 @@ namespace FAPS
         {
             monitor = new Middleman(ctsMiddleman.Token);
 
-            scheduler = new Scheduler(monitor, ctsScheduler.Token);
+            //scheduler = new Scheduler(monitor, ctsScheduler.Token);
             listener = new Listener(address, port, monitor, ctsListener.Token);
 
         }
@@ -111,10 +118,17 @@ namespace FAPS
             {
                 address = args[0];
                 port = args[1];
-                startProxyServer();
-                running = true;
+                if(isValidIP(address) && isDigitsOnly(port))
+                {
+                    startProxyServer();
+                    running = true;
 
-                menu();
+                    menu();
+                }
+                else
+                {
+                    Console.WriteLine("Invalid address or port");
+                }
             }
             else
             {
@@ -127,6 +141,23 @@ namespace FAPS
             Console.WriteLine("\nPress ENTER to exit...");
             Console.Read();
             return 0;
+        }
+
+        private static bool isDigitsOnly(string s)
+        {
+            foreach (char c in s)
+            {
+                if (c < '0' || c > '9')
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static bool isValidIP(string s)
+        {
+            IPAddress ip;
+            return IPAddress.TryParse(s, out ip);
         }
 
     }

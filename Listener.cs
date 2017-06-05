@@ -48,7 +48,7 @@ namespace FAPS
 
         public void CancelAsync()
         {
-            Console.WriteLine("LISTENER CANCEL");
+            Console.WriteLine("Listener: CANCEL");
             foreach(CancellationTokenSource ct in chtokens)
             {
                 ct.Cancel();

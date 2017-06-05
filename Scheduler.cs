@@ -65,7 +65,7 @@ namespace FAPS
             DataServerHandler dataServer;
             foreach(Tuple<String, String> t in tmpServerList)
             {
-                Console.WriteLine("SCHEDULER: " + t.Item1 + ":" + t.Item2);
+                //Console.WriteLine("SCHEDULER: " + t.Item1 + ":" + t.Item2);
                 dataServer = new DataServerHandler(monitor, this, token, t.Item1, Int32.Parse(t.Item2));
                 dataServer.startService();
                 serverList.Add(dataServer);

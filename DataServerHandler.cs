@@ -41,7 +41,7 @@ namespace FAPS
 
         private void CancelAsync()
         {
-            Console.WriteLine("SERVER HANDLER CANCEL");
+            Console.WriteLine("DSH: CANCEL");
             try
             {
                 socket.Shutdown(SocketShutdown.Both);
@@ -67,8 +67,6 @@ namespace FAPS
 
         private bool connect()
         {
-            Console.WriteLine("DATASERVER: " + address + ":" + port);
-
             IPAddress ipAddress = IPAddress.Parse(address);
             IPEndPoint remoteEP = new IPEndPoint(ipAddress, port);
 

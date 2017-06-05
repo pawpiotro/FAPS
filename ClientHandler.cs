@@ -35,7 +35,7 @@ namespace FAPS
 
         public void CancelAsync()
         {
-            Console.WriteLine("CH " + cmdProc.ID + ": CLIENT HANDLER CANCEL");
+            Console.WriteLine("CH " + cmdProc.ID + ": CANCEL");
             try
             {
                 if (socket.Connected)
