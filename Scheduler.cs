@@ -85,8 +85,16 @@ namespace FAPS
 
             while (!proxytoken.IsCancellationRequested)
             {
-                Command cmd = monitor.Fetch();
-                processCommand(cmd);
+                try
+                {
+                    Command cmd = monitor.Fetch();
+                    processCommand(cmd);
+                }
+                catch(NullReferenceException nre)
+                {
+                    Console.WriteLine(nre.ToString());
+                    break;
+                }
             }
             ctr.Dispose();
         }

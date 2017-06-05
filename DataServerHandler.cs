@@ -46,12 +46,19 @@ namespace FAPS
             Console.WriteLine("DSH" + serverID + ": CANCEL");
             try
             {
-                socket.Shutdown(SocketShutdown.Both);
-                socket.Close();
+                if (socket.Connected)
+                {
+                    socket.Shutdown(SocketShutdown.Both);
+                    socket.Close();
+                }
             }
             catch (SocketException se)
             {
                 Console.WriteLine(se.ToString());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
             }
         }
 

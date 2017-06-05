@@ -115,7 +115,15 @@ namespace FAPS
         }*/
         public Command Fetch()
         {
-            return Queue.Take(token);
+            try
+            {
+                return Queue.Take(token);
+            }
+            catch (OperationCanceledException oce)
+            {
+                Console.WriteLine(oce.ToString());
+                return null;
+            }
         }
         /*
         public Command dlTryFetch()
