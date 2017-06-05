@@ -92,7 +92,7 @@ namespace FAPS
                 }
                 catch(NullReferenceException nre)
                 {
-                    Console.WriteLine(nre.ToString());
+                    //TEMP
                     break;
                 }
             }

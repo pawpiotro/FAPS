@@ -54,11 +54,11 @@ namespace FAPS
             }
             catch (SocketException se)
             {
-                Console.WriteLine(se.ToString());
+                //TEMP
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                //TEMP
             }
         }
 
@@ -117,7 +117,7 @@ namespace FAPS
             }
             catch (SocketException se)
             {
-                Console.WriteLine(se.ToString());
+                //TEMP
             }
         }
 
