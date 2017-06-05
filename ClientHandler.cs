@@ -72,7 +72,6 @@ namespace FAPS
                 {
                     if (se.ErrorCode.Equals(10054))
                         break;
-                    //Console.WriteLine(se.ToString());
                 }
                 catch(Exception e)
                 {

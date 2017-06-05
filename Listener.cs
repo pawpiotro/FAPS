@@ -107,7 +107,7 @@ namespace FAPS
                     catch (SocketException e1)
                     {
                         //Console.WriteLine("Unexpected incoming transmission");
-                        //Console.WriteLine(e1.ToString());
+                        Console.WriteLine(e1.ToString());
                     }
                     catch (OverflowException e2)
                     {

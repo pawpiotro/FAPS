@@ -116,36 +116,47 @@ namespace FAPS
         {
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
 
+            bool needReconnect = false;
             while (!token.IsCancellationRequested)
             {
                 try
                 {
-                    Console.WriteLine("DSH: Czekam na SCH");
-                    waitForSch();
-                    Console.WriteLine("DSH: Obudzony");
-                    switch (state)
+                    if (needReconnect)
                     {
-                        case States.download:
-                            // Here goes download
-                            Console.WriteLine("DSH: Dostalem download");
-                            startDownload();
-                            state = States.idle;
-                            break;
-                        case States.upload:
-                            // Here goes upload
-                            Console.WriteLine("DSH: Dostalem Upload");
-                            startUpload();
-                            state = States.idle;
-                            break;
-                        case States.other:
-                            // Here goes Command send
-                            Console.WriteLine("DSH: Dostalem other");
-                            startCommand();
-                            state = States.idle;
-                            break;
-                        default:
-                            Console.WriteLine("DSH: Co to tu robi");
-                            break;
+                        if (connect())
+                        { 
+                        Console.WriteLine("RECONNECTED");
+                        needReconnect = false;
+                        }
+                    }
+                    else {
+                        Console.WriteLine("DSH: Czekam na SCH");
+                        waitForSch();
+                        Console.WriteLine("DSH: Obudzony");
+                        switch (state)
+                        {
+                            case States.download:
+                                // Here goes download
+                                Console.WriteLine("DSH: Dostalem download");
+                                startDownload();
+                                state = States.idle;
+                                break;
+                            case States.upload:
+                                // Here goes upload
+                                Console.WriteLine("DSH: Dostalem Upload");
+                                startUpload();
+                                state = States.idle;
+                                break;
+                            case States.other:
+                                // Here goes Command send
+                                Console.WriteLine("DSH: Dostalem other");
+                                startCommand();
+                                state = States.idle;
+                                break;
+                            default:
+                                Console.WriteLine("DSH: Co to tu robi");
+                                break;
+                        }
                     }
                 }
                 catch (SocketException se)
@@ -153,14 +164,17 @@ namespace FAPS
                     if (state == States.download)
                         scheduler.addFailed((CommandDownload) cmd);
                     if (se.ErrorCode.Equals(10054))
-                        break;
+                        needReconnect = true;
+                        //break;
                 }
                 catch (Exception e)
                 {
                     if (state == States.download)
                         scheduler.addFailed((CommandDownload)cmd);
                     Console.WriteLine("Connection with Data Server closed");
-                    break;
+                    if (e.Message.Equals("Not responding"))
+                        needReconnect = true;
+                        //break;
                 }
             }
             if (socket.Connected)
@@ -176,6 +190,7 @@ namespace FAPS
             CancellationTokenRegistration ctr = token.Register(CancelAsync);
 
             Command cmd;
+            
             while (!token.IsCancellationRequested)
             {
                 try

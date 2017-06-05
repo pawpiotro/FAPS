@@ -13,23 +13,34 @@ namespace FAPS
         private static Middleman monitor;
         private static Listener listener;
 
+        private static String address;
+        private static String port;
+
+        private static bool running;
+
         private static void changePort()
         {
             
             ctsListener.Cancel();  //stop service
             Console.WriteLine("new port:");
             String new_port = Console.ReadLine();
-            listener.Port = new_port;
-            listener.startService();
-            
+            port = new_port;
+            ctsListener = new CancellationTokenSource();
+            listener = new Listener(address, port, monitor, ctsListener.Token);
         }
-        private static void doSmth()        // TEMP
+        private static void stopService()        // TEMP
         {
             ctsListener.Cancel();
+            ctsScheduler.Cancel();
+            ctsMiddleman.Cancel();
+            Console.WriteLine("Service stopped");
         }
-        private static void doSmthElse()    // TEMP
+        private static void startService()    // TEMP
         {
-
+            ctsListener = new CancellationTokenSource();
+            ctsScheduler = new CancellationTokenSource();
+            ctsMiddleman = new CancellationTokenSource();
+            startProxyServer();
         }
         
         private static void menu()
@@ -42,28 +53,36 @@ namespace FAPS
                 listener.printConnected();
                 Console.WriteLine("===============");
                 Console.Write(
-                    "1. Change port\n2. Do smth\n3. Do smth else\n0. Exit\n");
+                    "1. Change port\n2. Stop service\n3. Start service\n0. Exit\n");
+                Console.WriteLine("===============");
                 input =  Console.ReadLine();
                 Console.WriteLine(input);
                 if (Int32.TryParse(input, out num))          // check if input is number;
                 {
-                    if (num.Equals(0))
-                    {
-                        ctsListener.Cancel();
-                        ctsScheduler.Cancel();
-                        ctsMiddleman.Cancel();
-                        Environment.Exit(0);    // TEMP
-                    }
                     switch (num)
                     {
+                        case 0:
+                            ctsListener.Cancel();
+                            ctsScheduler.Cancel();
+                            ctsMiddleman.Cancel();
+                            Environment.Exit(0);
+                            break;
                         case 1:
                             changePort();
                             break;
                         case 2:
-                            doSmth();
+                            if (running.Equals(true))
+                            {
+                                stopService();
+                                running = false;
+                            }
                             break;
                         case 3:
-                            doSmthElse();
+                            if (running.Equals(false))
+                            {
+                                startService();
+                                running = true;
+                            }
                             break;
                         default:
                             Console.WriteLine("Invalid input");
@@ -76,29 +95,35 @@ namespace FAPS
             }
         }
         
+        private static void startProxyServer()
+        {
+            monitor = new Middleman(ctsMiddleman.Token);
+
+            scheduler = new Scheduler(monitor, ctsScheduler.Token);
+            listener = new Listener(address, port, monitor, ctsListener.Token);
+
+        }
+
         public static int Main(String[] args)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             if (args.Length >= 2)
             {
-                
-                monitor = new Middleman(ctsMiddleman.Token);
-
-                scheduler = new Scheduler(monitor, ctsScheduler.Token);
-                listener = new Listener(args[0], args[1], monitor, ctsListener.Token);
+                address = args[0];
+                port = args[1];
+                startProxyServer();
+                running = true;
 
                 menu();
-
-                ctsListener.Dispose();
-                ctsScheduler.Dispose();
-                ctsMiddleman.Dispose();
-
             }
             else
             {
                 Console.WriteLine("Not enough arguments.");
             }
-            
+
+            ctsListener.Dispose();
+            ctsScheduler.Dispose();
+            ctsMiddleman.Dispose();
             Console.WriteLine("\nPress ENTER to exit...");
             Console.Read();
             return 0;
