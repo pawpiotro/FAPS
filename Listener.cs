@@ -63,7 +63,7 @@ namespace FAPS
             }
             catch (SocketException se)
             {
-                Console.WriteLine(se.ToString());
+                //Console.WriteLine(se.ToString());
             }
         }
 
@@ -106,8 +106,8 @@ namespace FAPS
                     }
                     catch (SocketException e1)
                     {
-                        //Console.WriteLine("Unexpected incoming transmission");
-                        Console.WriteLine(e1.ToString());
+                        if (!e1.ErrorCode.Equals(10004))//operation canceled - OK
+                            Console.WriteLine(e1.ToString());
                     }
                     catch (OverflowException e2)
                     {

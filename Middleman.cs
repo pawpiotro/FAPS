@@ -120,7 +120,7 @@ namespace FAPS
             }
             catch (OperationCanceledException oce)
             {
-                Console.WriteLine(oce.ToString());
+                //Console.WriteLine(oce.ToString());
                 return null;
             }
         }
