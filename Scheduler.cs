@@ -245,7 +245,7 @@ namespace FAPS
                 uplBuff[i] = monitor.UploadChunkQueue.Take(token);  // Ready chunks queue
             }
             Console.WriteLine("SCH: maxfrag = " + maxFrag + " caly size = " + cmd.Size);
-            Thread.Sleep(6000);
+            //Thread.Sleep(6000);
             lock (dshLock)
             {
                 Monitor.PulseAll(dshLock);
