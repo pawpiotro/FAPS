@@ -108,8 +108,8 @@ namespace FAPS
         public NetworkFrame(CMD c, String d)
         {
             eCode = c;
-            nSize = d.Length;
             data = Encoding.UTF8.GetBytes(d);
+            nSize = data.Length;
             id = null;
         }
 
