@@ -89,6 +89,10 @@ namespace FAPS
             {
                 try
                 {
+                    waitingForCommit = 0;
+                    commited = 0;
+                    commit = null;
+                    accepted = 0;
                     Command cmd = monitor.Fetch();
                     processCommand(cmd);
                 }
@@ -228,13 +232,13 @@ namespace FAPS
             Console.WriteLine("Zaakceptowano upload na wszystkich serwerach");
 
 
-            accepted = 0;
             cmd.CmdProc.Incoming.Add(new CommandAccept(), token);
             uplBuff = new CommandChunk[fileBufferSize];
             maxFrag = (int)((cmd.Size + fragSizeUpl - 1)/ fragSizeUpl); // Round up
             uplFrags = new byte[maxFrag];
             lastSucc = 0;
-            Console.WriteLine("SCH: maxfrag = " + maxFrag + " buf size = "+fileBufferSize);
+            Console.WriteLine("SCH: maxfrag = " + maxFrag + " caly size = "+cmd.Size);
+            Thread.Sleep(10000);
             for (int i = 0; i < maxFrag; i++)
                 uplFrags[i] = 0;
             for (int i = 0; i < fileBufferSize && i < maxFrag && !token.IsCancellationRequested; i++)
@@ -278,9 +282,6 @@ namespace FAPS
                             {
                                 break;
                             }
-                            waitingForCommit = 0;
-                            commited = 0;
-                            commit = null;
                             Console.WriteLine("Zuploadowano plik na kazdy serwer");
                             cmd.CmdProc.Incoming.Add(new CommandAccept(), token);
                             break;
@@ -477,7 +478,10 @@ namespace FAPS
                 accepted++;
                 wakeSch();
                 do
+                {
                     Monitor.Wait(dshLock);
+                    Console.WriteLine("DSH" + id + " Accepted " + accepted);
+                }
                 while (accepted < serverList.Count);
                 Console.WriteLine("DSH" + id + " Doczekalem sie acceptow");
             }

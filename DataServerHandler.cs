@@ -345,12 +345,11 @@ namespace FAPS
                 {
                     Console.WriteLine("DSH" + serverID + ": Zasysam nastepnego chunka.");
                     chunk = scheduler.takeUplChunk(frag, serverID); ;
-                    Console.WriteLine("DSH" + serverID + ": Wysylam chunk o rozmiarze: " + chunk.Data.Length);
+                    Console.WriteLine("DSH" + serverID + ": Wysylam chunk o rozmiarze: " + chunk.Data.Length + " Lacznie juz " +sentSize);
                     cmdTrans.sendCmd(chunk);
-                    Console.WriteLine("DSH" + serverID + ": Wyslano chunka.");
+                    Console.WriteLine("DSH" + serverID + ": Wyslano lacznie "+sentSize+" caly rozmiar "+upl.Size);
                     scheduler.uplSucc(frag);
                     scheduler.wakeSch();
-                    Console.WriteLine("DSH" + serverID + ": Obudzilem sch.");
                     sentSize += chunk.Data.Length;
                     frag++;
                 }
