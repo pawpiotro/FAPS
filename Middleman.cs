@@ -8,13 +8,12 @@ namespace FAPS
     class Middleman
     {
         private CancellationToken token;
-
         /*
         private BlockingCollection<Command> uploadQueue = new BlockingCollection<Command>();
         private BlockingCollection<Command> downloadQueue = new BlockingCollection<Command>();
         private BlockingCollection<Command> miscQueue = new BlockingCollection<Command>();
         */
-        private BlockingCollection<Command> Queue = new BlockingCollection<Command>();
+        private BlockingCollection<Command> Queue = new BlockingCollection<Command>(10); //TODO ograniczenie
         private BlockingCollection<CommandChunk> uploadChunkQueue = new BlockingCollection<CommandChunk>();
         private CommandChunk[] downloadBuffer;
         private int bufferSize;

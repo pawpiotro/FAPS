@@ -237,8 +237,6 @@ namespace FAPS
             maxFrag = (int)((cmd.Size + fragSizeUpl - 1)/ fragSizeUpl); // Round up
             uplFrags = new byte[maxFrag];
             lastSucc = 0;
-            Console.WriteLine("SCH: maxfrag = " + maxFrag + " caly size = "+cmd.Size);
-            Thread.Sleep(10000);
             for (int i = 0; i < maxFrag; i++)
                 uplFrags[i] = 0;
             for (int i = 0; i < fileBufferSize && i < maxFrag && !token.IsCancellationRequested; i++)
@@ -246,7 +244,9 @@ namespace FAPS
                 Console.WriteLine("SCH: Wstawiam do kolejki chunka " + i);
                 uplBuff[i] = monitor.UploadChunkQueue.Take(token);  // Ready chunks queue
             }
-            lock(dshLock)
+            Console.WriteLine("SCH: maxfrag = " + maxFrag + " caly size = " + cmd.Size);
+            Thread.Sleep(6000);
+            lock (dshLock)
             {
                 Monitor.PulseAll(dshLock);
             }
@@ -293,15 +293,12 @@ namespace FAPS
                                 Console.WriteLine("SCH: Wszystkie zassały chunka " + lastSucc);
                                 // All DSHs uploaded one chunk, swap it with a new one
                                 uplFrags[lastSucc]++;
-                                if (lastSucc < maxFrag)
+                                if (lastSucc < maxFrag && maxFrag - lastSucc > fileBufferSize)
                                 {
-                                    lastSucc++;
-                                    if (maxFrag - lastSucc > fileBufferSize)
-                                    {
-                                        Console.WriteLine("SCH: Wstawiam chunka na miejsce " + lastSucc % fileBufferSize);
-                                        uplBuff[lastSucc % fileBufferSize] = monitor.UploadChunkQueue.Take(token);
-                                    }
+                                    Console.WriteLine("SCH: Wstawiam chunka na miejsce " + lastSucc % fileBufferSize);
+                                    uplBuff[lastSucc % fileBufferSize] = monitor.UploadChunkQueue.Take(token);
                                 }
+                                lastSucc++;
                             }
                             Console.WriteLine("#############Ide spac 2");
                             Monitor.PulseAll(dshLock);

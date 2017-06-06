@@ -65,7 +65,7 @@ namespace FAPS
                             Console.WriteLine("CH *new*: Received command: " + cmd.GetType());
                         else
                             Console.WriteLine("CH " + cmdProc.ID + ": Received command: " + cmd.GetType());
-                        cmdProc.Incoming.Add(cmd);
+                        cmdProc.Incoming.Add(cmd, token);
                     }
                 }
                 catch (SocketException se)
