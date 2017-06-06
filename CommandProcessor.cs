@@ -12,8 +12,8 @@ namespace FAPS
     {
         private CancellationTokenSource cts;
         private CancellationToken token;
-        private BlockingCollection<Command> incoming = new BlockingCollection<Command>();
-        private BlockingCollection<Command> toSend = new BlockingCollection<Command>();
+        private BlockingCollection<Command> incoming = new BlockingCollection<Command>(10000);
+        private BlockingCollection<Command> toSend = new BlockingCollection<Command>(10000);
         private Middleman monitor;
         private String id = "";
 

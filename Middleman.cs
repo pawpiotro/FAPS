@@ -13,8 +13,8 @@ namespace FAPS
         private BlockingCollection<Command> downloadQueue = new BlockingCollection<Command>();
         private BlockingCollection<Command> miscQueue = new BlockingCollection<Command>();
         */
-        private BlockingCollection<Command> Queue = new BlockingCollection<Command>(10); //TODO ograniczenie
-        private BlockingCollection<CommandChunk> uploadChunkQueue = new BlockingCollection<CommandChunk>();
+        private BlockingCollection<Command> Queue = new BlockingCollection<Command>(10000); //TODO ograniczenie
+        private BlockingCollection<CommandChunk> uploadChunkQueue = new BlockingCollection<CommandChunk>(10000);
         private CommandChunk[] downloadBuffer;
         private int bufferSize;
 

@@ -33,7 +33,7 @@ namespace FAPS
                         rec += socket.Receive(nf.Size, rec, 4 - rec, SocketFlags.None);
                     }
                     nf.nSize = IPAddress.NetworkToHostOrder(nf.nSize);
-                    if (nf.nSize > 25000)
+                    if (nf.nSize > 10000)
                     {
                         throw new Exception("File too big");
                     }
@@ -43,7 +43,10 @@ namespace FAPS
                     {
                         rec += socket.Receive(nf.Data, rec, nf.nSize - rec, SocketFlags.None);
                     }
-                    Console.WriteLine("FROM " + socket.RemoteEndPoint + ": Code=" + nf.eCode +" Size=" + nf.nSize +" Data="+ nf.sData);
+                    Console.WriteLine("FROM " + socket.RemoteEndPoint + ": Code=" + nf.eCode +" Size=" + nf.nSize);
+                    if (nf.nSize < 100)
+                        Console.Write(" Data=" + nf.sData);
+                    Console.Write("\n");
                 }
                 else
                 {
@@ -134,7 +137,10 @@ namespace FAPS
                     {
                         sent += socket.Send(nf.Data, sent, hSize - sent, SocketFlags.None);
                     } while (sent < hSize);
-                    Console.WriteLine("  TO " + socket.RemoteEndPoint + ": Code=" + nf.eCode + " Size=" + hSize +" Data="+ nf.sData);
+                    Console.Write("  TO " + socket.RemoteEndPoint + ": Code=" + nf.eCode + " Size=" + hSize);
+                    if (hSize < 100)
+                        Console.Write(" Data=" + nf.sData);
+                    Console.Write("\n");
                 }
                 else
                 {
