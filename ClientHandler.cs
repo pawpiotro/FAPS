@@ -61,10 +61,10 @@ namespace FAPS
                     cmd = cmdTrans.getCmd();
                     if (!cmd.Equals(null))
                     {
-                        if(cmdProc.ID.Equals(""))
+                        /*if(cmdProc.ID.Equals(""))
                             Console.WriteLine("CH *new*: Received command: " + cmd.GetType());
                         else
-                            Console.WriteLine("CH " + cmdProc.ID + ": Received command: " + cmd.GetType());
+                            Console.WriteLine("CH " + cmdProc.ID + ": Received command: " + cmd.GetType());*/
                         cmdProc.Incoming.Add(cmd, token);
                     }
                 }
@@ -102,7 +102,7 @@ namespace FAPS
                 try
                 {
                     cmd = cmdProc.ToSend.Take(token);
-                    Console.WriteLine("CH " + cmdProc.ID + ": Sent command: " + cmd.GetType());
+                    //Console.WriteLine("CH " + cmdProc.ID + ": Sent command: " + cmd.GetType());
                     cmdTrans.sendCmd(cmd);
                 }
                 catch (SocketException se)
