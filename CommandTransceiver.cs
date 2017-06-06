@@ -43,11 +43,11 @@ namespace FAPS
                     {
                         rec += socket.Receive(nf.Data, rec, nf.nSize - rec, SocketFlags.None);
                     }
-                    Console.WriteLine("FROM " + socket.LocalEndPoint + ": Code=" + nf.nCode +" Size=" + nf.nSize);// +" Data="+ nf.sData);
+                    Console.WriteLine("FROM " + socket.RemoteEndPoint + ": Code=" + nf.nCode +" Size=" + nf.nSize);// +" Data="+ nf.sData);
                 }
                 else
                 {
-                    Console.WriteLine("FROM " + socket.LocalEndPoint + ": Code=" + nf.nCode);
+                    Console.WriteLine("FROM " + socket.RemoteEndPoint + ": Code=" + nf.nCode);
                 }
                 return nf;
             }
@@ -134,11 +134,11 @@ namespace FAPS
                     {
                         sent += socket.Send(nf.Data, sent, hSize - sent, SocketFlags.None);
                     } while (sent < hSize);
-                    Console.WriteLine("  TO " + socket.LocalEndPoint + ": Code=" + nf.nCode + " Size=" + hSize);// +" Data="+ nf.sData);
+                    Console.WriteLine("  TO " + socket.RemoteEndPoint + ": Code=" + nf.nCode + " Size=" + hSize);// +" Data="+ nf.sData);
                 }
                 else
                 {
-                    Console.WriteLine("  TO " + socket.LocalEndPoint + ": Code=" + nf.nCode);
+                    Console.WriteLine("  TO " + socket.RemoteEndPoint + ": Code=" + nf.nCode);
                 }
                 
             }
