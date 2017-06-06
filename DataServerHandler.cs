@@ -326,7 +326,7 @@ namespace FAPS
 
         private void startUpload()
         {
-            Console.WriteLine("Rozpoczeto upload");
+            Console.WriteLine("DSH"+serverID+" Rozpoczeto upload");
             cmdTrans.sendCmd(cmd);
             CommandUpload upl = (CommandUpload)cmd;
             //int fragments = (int)(upl.Size + scheduler.FragSize - 1 / scheduler.FragSize); // How many chunks to send. Round up.
@@ -336,8 +336,8 @@ namespace FAPS
             Command recvd = cmdTrans.getCmd();
             if (recvd.GetType().Equals(typeof(CommandAccept)))
             {
-                Console.WriteLine("Upload zaakceptowany");
-                scheduler.ConfirmAccept();
+                Console.WriteLine("DSH" + serverID + " Upload zaakceptowany");
+                scheduler.ConfirmAccept(serverID);
                 // Upload all the chunks
                 int frag = 0;
                 //for (int i = 0; i < fragments; i++)

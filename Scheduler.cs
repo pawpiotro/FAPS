@@ -14,7 +14,7 @@ namespace FAPS
         private List <DataServerHandler> serverList = new List<DataServerHandler>();
         private static object dshLock = new object();
         private static object schLock = new object();
-        private int lastFrag, maxFrag, lastSucc, fragSize, fileBufferSize;
+        private int lastFrag, maxFrag, lastSucc, fragSizeDwn, fragSizeUpl, fileBufferSize;
         private BlockingCollection <CommandDownload> failedFrags = new BlockingCollection<CommandDownload>();
         private bool[] succFrags;
         private byte[] uplFrags;
@@ -25,7 +25,8 @@ namespace FAPS
         private CommandCommit commit = null;
         private int waitingForCommit = 0, commited = 0, accepted = 0;
 
-        public int FragSize { get { return fragSize; } set { fragSize = value; } }
+        public int FragSizeDwn { get { return fragSizeDwn; } set { fragSizeDwn = value; } }
+        public int FragSizeUpl { get { return fragSizeUpl; } set { fragSizeUpl = value; } }
         public int FileBufferSize { get { return fileBufferSize; } set { fileBufferSize = value; } }
 
         public Scheduler(Middleman _monitor, CancellationToken _token)
@@ -35,7 +36,8 @@ namespace FAPS
             dshtoken = dshtksrc.Token;
             linkedsrc = CancellationTokenSource.CreateLinkedTokenSource(proxytoken, dshtoken);
             token = linkedsrc.Token;
-            fragSize = 1*1024*4;
+            fragSizeDwn = 1*1024*2;
+            fragSizeUpl = 1*1024*4;
             fileBufferSize = 10;
 
             startService();
@@ -151,8 +153,8 @@ namespace FAPS
             Console.WriteLine("SCH: Tworze nowy chunk " +frag);
             CommandDownload newcmd = new CommandDownload(cmd);
             //CommandDownload newcmd = cmd;
-            newcmd.Begin = frag * fragSize;
-            newcmd.End = (frag + 1) * fragSize;
+            newcmd.Begin = frag * fragSizeDwn;
+            newcmd.End = (frag + 1) * fragSizeDwn;
             if (newcmd.Begin > cmd.End || newcmd.Begin < 0)
                 return null;
             if (newcmd.End > cmd.End)
@@ -166,7 +168,7 @@ namespace FAPS
             currentClient = cmd.CmdProc;
             lastFrag = 0;
             int totalSize = cmd.End;
-            maxFrag = (totalSize + fragSize - 1) / fragSize; // Round up
+            maxFrag = (totalSize + fragSizeDwn - 1) / fragSizeDwn; // Round up
             monitor.setDownloadBuffer(fileBufferSize);
             succFrags = new bool[maxFrag];
             lastSucc = 0;
@@ -187,7 +189,7 @@ namespace FAPS
                 {
                     dwn = failedFrags.Take(token);
                     Console.WriteLine("SCH: Zfailowany fragment " + dwn.Begin);
-                    server.addDownload(dwn, dwn.Begin / fragSize);
+                    server.addDownload(dwn, dwn.Begin / fragSizeDwn);
                 }
                 else if (lastFrag < maxFrag)    // Still missing few
                 {
@@ -229,7 +231,7 @@ namespace FAPS
             accepted = 0;
             cmd.CmdProc.Incoming.Add(new CommandAccept(), token);
             uplBuff = new CommandChunk[fileBufferSize];
-            maxFrag = (int)((cmd.Size + fragSize - 1)/ fragSize); // Round up
+            maxFrag = (int)((cmd.Size + fragSizeUpl - 1)/ fragSizeUpl); // Round up
             uplFrags = new byte[maxFrag];
             lastSucc = 0;
             Console.WriteLine("SCH: maxfrag = " + maxFrag + " buf size = "+fileBufferSize);
@@ -467,13 +469,17 @@ namespace FAPS
                 wakeSch();
             }
         }
-        public void ConfirmAccept()
+        public void ConfirmAccept(int id)
         {
             lock(dshLock)
             {
+                Console.WriteLine("DSH" + id + " Czekam na accepty");
                 accepted++;
                 wakeSch();
-                Monitor.Wait(dshLock);
+                do
+                    Monitor.Wait(dshLock);
+                while (accepted < serverList.Count);
+                Console.WriteLine("DSH" + id + " Doczekalem sie acceptow");
             }
         }
 
