@@ -36,7 +36,7 @@ namespace FAPS
             dshtoken = dshtksrc.Token;
             linkedsrc = CancellationTokenSource.CreateLinkedTokenSource(proxytoken, dshtoken);
             token = linkedsrc.Token;
-            fragSizeDwn = 1*1024*2;
+            fragSizeDwn = 1*1024*10;
             fragSizeUpl = 1*1024*4;
             fileBufferSize = 10;
 

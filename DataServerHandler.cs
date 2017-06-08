@@ -419,6 +419,8 @@ namespace FAPS
                     Console.WriteLine("DSH: Unexpected server response after cmd commit: " + recvd.GetType());
                 else if (state == States.uplwait)
                     Console.WriteLine("DSH: Unexpected server response after upload commit: " + recvd.GetType());
+                else
+                    Console.WriteLine("DSH: Unexpected server response after commit: " + recvd.GetType());
             else
             {
                 Console.WriteLine("Potwierdzono commit.");
