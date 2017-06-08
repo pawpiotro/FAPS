@@ -106,7 +106,9 @@ namespace FAPS
         {
             Console.WriteLine("DSH" + serverID + ": DISCONNECT");
             try
-            {
+            { 
+                lock(cmdLock)
+                    Monitor.PulseAll(cmdLock);
                 if (socket.Connected)
                 {
                     socket.Shutdown(SocketShutdown.Both);
