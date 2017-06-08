@@ -50,6 +50,7 @@ namespace FAPS
 
         private List<Tuple<String, String>> loadServerList()
         {
+            // Load servers IP from servers.txt file
             var tmpServerList = new List<Tuple<String, String>>();
             String[] result;
             String[] separators = { ":" };
@@ -67,12 +68,12 @@ namespace FAPS
 
         public bool connectToServers()
         {
+            // Connect one DSH to each server
             var tmpServerList = loadServerList();
             DataServerHandler dataServer;
             int i = 0;
             foreach(Tuple<String, String> t in tmpServerList)
             {
-                //Console.WriteLine("SCHEDULER: " + t.Item1 + ":" + t.Item2);
                 dataServer = new DataServerHandler(monitor, this, token, t.Item1, Int32.Parse(t.Item2), i++);
                 dataServer.startService();
                 serverList.Add(dataServer);
@@ -89,6 +90,7 @@ namespace FAPS
             {
                 try
                 {
+                    // Get command from Middleman and process it
                     waitingForCommit = 0;
                     commited = 0;
                     commit = null;
@@ -154,9 +156,9 @@ namespace FAPS
 
         private CommandDownload makeChunk(CommandDownload cmd, int frag)
         {
+            // Make new Download command for one fragment
             Console.WriteLine("SCH: Tworze nowy chunk " +frag);
             CommandDownload newcmd = new CommandDownload(cmd);
-            //CommandDownload newcmd = cmd;
             newcmd.Begin = frag * fragSizeDwn;
             newcmd.End = (frag + 1) * fragSizeDwn;
             if (newcmd.Begin > cmd.End || newcmd.Begin < 0)
@@ -184,18 +186,21 @@ namespace FAPS
             Console.WriteLine("SCH: Zaczynam Download");
             while (!token.IsCancellationRequested)
             {
+                // Wait for first idle DSH
                 server = avaibleServer();
                 if (token.IsCancellationRequested)
                 {
                     break;
                 }
+
                 if (failedFrags.Count > 0)      // There are some fragments that need to be redownloaded
                 {
                     dwn = failedFrags.Take(token);
                     Console.WriteLine("SCH: Zfailowany fragment " + dwn.Begin);
                     server.addDownload(dwn, dwn.Begin / fragSizeDwn);
                 }
-                else if (lastFrag < maxFrag)    // Still missing few
+
+                else if (lastFrag < maxFrag)    // Not all fragments have been downloaded
                 {
                     if (lastFrag >= lastSucc + fileBufferSize)
                     {
@@ -203,15 +208,17 @@ namespace FAPS
                         waitForDwn();
                         continue;
                     }
+                    // Make new Download command for specific fragment and pass it to DSH
                     dwn = makeChunk(cmd, lastFrag);
                     Console.WriteLine("SCH: Zlecam nowy chunk " + lastFrag +" "+ dwn.Begin+" "+dwn.End);
                     server.addDownload(dwn, lastFrag);
                     lastFrag++;
                 }
+
+                // All fragments have started downloading and no one failed yet,
+                // so check if they all succeeded
                 else if (allSucc())
                 {
-                    // All fragments have started downloading and no one failed yet,
-                    // so check if they all succeeded
                     Console.WriteLine("SCH: Pobieranie zakonczone");
                     break;
                 }
@@ -226,12 +233,13 @@ namespace FAPS
                 server.addUpload(cmd);      // Notify every server about upload
             lock(schLock)
             {
+                // Wait for Accept from every server
                 while (accepted < serverList.Count)
                     Monitor.Wait(schLock);
             }
             Console.WriteLine("Zaakceptowano upload na wszystkich serwerach");
 
-
+            // Prepare upload chunks for DSHs and wake them up
             cmd.CmdProc.Incoming.Add(new CommandAccept(), token);
             uplBuff = new CommandChunk[fileBufferSize];
             maxFrag = (int)((cmd.Size + fragSizeUpl - 1)/ fragSizeUpl); // Round up
@@ -245,7 +253,6 @@ namespace FAPS
                 uplBuff[i] = monitor.UploadChunkQueue.Take(token);  // Ready chunks queue
             }
             Console.WriteLine("SCH: maxfrag = " + maxFrag + " caly size = " + cmd.Size);
-            //Thread.Sleep(6000);
             lock (dshLock)
             {
                 Monitor.PulseAll(dshLock);
@@ -259,9 +266,10 @@ namespace FAPS
                 {
                     lock (schLock)
                     {
-                        Console.WriteLine("#############Ide spac 1");
+                        // Wait for at least one DSH to complete/fail upload of one chunk
                         Monitor.Wait(schLock);
-                        Console.WriteLine("Obudzony 1");
+
+                        // Check if all chunks have been uploaded
                         if (lastSucc >= maxFrag)
                         {
                             // All chunks taken by DSHs, wait for all CommitRdys
@@ -275,6 +283,7 @@ namespace FAPS
                             Console.WriteLine("Commit gotowy");
                             lock (dshLock)
                                 Monitor.PulseAll(dshLock);
+
                             // Submit commit, wait for all CommitAcks
                             while (commited < serverList.Count && !token.IsCancellationRequested)
                                 Monitor.Wait(schLock);
@@ -286,6 +295,9 @@ namespace FAPS
                             cmd.CmdProc.Incoming.Add(new CommandAccept(), token);
                             break;
                         }
+
+
+                        // Check if one chunk has been uploaded by all DSHs
                         lock (dshLock)
                         {
                             if ((int)uplFrags[lastSucc] == serverList.Count)
@@ -300,9 +312,7 @@ namespace FAPS
                                 }
                                 lastSucc++;
                             }
-                            Console.WriteLine("#############Ide spac 2");
                             Monitor.PulseAll(dshLock);
-                            Console.WriteLine("Obudzony 2");
                         }
                     }
                 }
@@ -316,6 +326,7 @@ namespace FAPS
 
         private void startOther(Command cmd)
         {
+            // Pass command to every DHSs
             sendEveryone(cmd);
             if (!cmd.GetType().Equals(typeof(CommandRename)) && !cmd.GetType().Equals(typeof(CommandDelete)))
             {
@@ -324,6 +335,7 @@ namespace FAPS
             }
             lock (schLock)
             {
+                // Wait for CommitRdy from all servers
                 while (waitingForCommit < serverList.Count && !token.IsCancellationRequested)
                     Monitor.Wait(schLock);
                 if (token.IsCancellationRequested)
@@ -354,6 +366,7 @@ namespace FAPS
 
         private DataServerHandler avaibleServer()
         {
+            // Check for the first idle server
             while (!token.IsCancellationRequested)
             {
                 foreach (DataServerHandler server in serverList)
@@ -366,11 +379,13 @@ namespace FAPS
 
         public void addFailed(CommandDownload cmd)
         {
+            // Used by DSH to return a failed Download command
             failedFrags.Add(cmd);
         }
 
         private bool allSucc()
         {
+            // Check if all fragments have beed succesfully downloaded
             lock(schLock)
                 for (int i = 0; i < maxFrag; i++)
                     if (succFrags[i] == false)
@@ -383,7 +398,7 @@ namespace FAPS
 
         public void success(int fragment)
         {
-            // Server handlers will invoke this upon succesfull download
+            // DSHs will invoke this upon succesfull download
             lock(schLock)
             {
                 Console.WriteLine("Succes chunka " + fragment);
@@ -393,6 +408,7 @@ namespace FAPS
 
         public CommandChunk takeUplChunk(int frag, int id)
         {
+            // Used by DSH, wait for next chunk to upload
             Console.WriteLine("DSH" + id + " Biore chunka " + frag);
             lock (dshLock)
             {
@@ -400,7 +416,8 @@ namespace FAPS
                 int min = frag - fileBufferSize;
                 if (min < 0)
                     return uplBuff[frag];
-                // Chunk index is bigger than buffer size, so check if it's in buffer
+                // Chunk index is bigger than buffer size
+                // so check if the new chunk has already been swapped with a previous one in buffer
                 while (!token.IsCancellationRequested)
                     if ((int)uplFrags[min] == serverList.Count + 1)
                         return uplBuff[frag % fileBufferSize];
@@ -412,6 +429,7 @@ namespace FAPS
 
         public void uplSucc(int frag)
         {
+            // Used by DSH when chunk is succesfully uploaded
             lock(dshLock)
             {
                 uplFrags[frag]++;
@@ -420,6 +438,7 @@ namespace FAPS
 
         private void waitForDwn()
         {
+            // Wait for chunk next in order to download, then send it to client
             lock (schLock)
             {
                 Monitor.Wait(schLock);
@@ -450,6 +469,7 @@ namespace FAPS
 
         public CommandCommit waitForCommit()
         {
+            // Used by DSH to signal it's ready and waiting for commit
             lock(dshLock)
             {
                 waitingForCommit++;
@@ -461,6 +481,7 @@ namespace FAPS
         }
         public void ConfirmCommit()
         {
+            // Used by DSH to confirm CommitAck from server
             lock(dshLock)
             {
                 commited++;
@@ -469,9 +490,10 @@ namespace FAPS
         }
         public void ConfirmAccept(int id)
         {
+            // Used by DSH to confirm Accept from server
             lock(dshLock)
             {
-                Console.WriteLine("DSH" + id + " Czekam na accepty");
+                Console.WriteLine("DSH" + id + " Czekam na accepty innych serwerow");
                 accepted++;
                 wakeSch();
                 do
@@ -480,7 +502,6 @@ namespace FAPS
                     Console.WriteLine("DSH" + id + " Accepted " + accepted);
                 }
                 while (accepted < serverList.Count);
-                Console.WriteLine("DSH" + id + " Doczekalem sie acceptow");
             }
         }
 
@@ -508,6 +529,7 @@ namespace FAPS
 
         public void cancel()
         {
+            // Used by DSH to cancel other DSHs operations
             foreach (DataServerHandler server in serverList)
                 server.cancel();
             dshtksrc.Cancel();

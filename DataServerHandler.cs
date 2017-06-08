@@ -70,7 +70,6 @@ namespace FAPS
             {
                 Console.WriteLine("DSH" + serverID + " Logged in to data server");
                 Task.Factory.StartNew(runSender, token);
-                //Task.Factory.StartNew(runReceiver, token);
             }
         }
 
@@ -78,8 +77,6 @@ namespace FAPS
         {
             IPAddress ipAddress = IPAddress.Parse(address);
             IPEndPoint remoteEP = new IPEndPoint(ipAddress, port);
-
-            //Console.WriteLine(address + ":" + port);
 
             socket = new Socket(AddressFamily.InterNetwork,
                 SocketType.Stream, ProtocolType.Tcp);
@@ -153,9 +150,11 @@ namespace FAPS
                         }
                     }
                     else {
+
+
+                        // Wait for Command from scheduler
                         Console.WriteLine("DSH" +serverID + ": Czekam na SCH");
                         waitForSch();
-                        Console.WriteLine("DSH" + serverID + ": Obudzony");
                         switch (state)
                         {
                             case States.download:
@@ -185,6 +184,7 @@ namespace FAPS
                         }
                     }
                 }
+
                 catch (SocketException se)
                 {
                     if (state == States.download)
@@ -196,15 +196,14 @@ namespace FAPS
                             rollback();
                         else
                             error(1);
-                    //if (se.ErrorCode.Equals(10054))
                     else
                     {
                         Console.WriteLine("Connection with Data Server " + serverID + " closed: SocketException");
                         needReconnect = true;
                     }
-                    //break;
                     state = States.idle;
                 }
+
                 catch (Exception e)
                 {
                     if (state == States.download)
@@ -216,13 +215,11 @@ namespace FAPS
                             rollback();
                         else
                             error(1);
-                    //if (e.Message.Equals("Not responding"))
                     else
                     {
                         Console.WriteLine("Connection with Data Server " + serverID + " closed: Exception");
                         needReconnect = true;
                     }
-                    //break;
                     state = States.idle;
                 }
             }
@@ -234,39 +231,7 @@ namespace FAPS
             Console.WriteLine("Server handler " + serverID + " sender thread has ended");
         }
 
-        private void runReceiver()
-        {
-            CancellationTokenRegistration ctr = token.Register(CancelAsync);
-
-            Command cmd;
-            
-            while (!token.IsCancellationRequested)
-            {
-                try
-                {
-                    cmd = cmdTrans.getCmd();
-                    Console.WriteLine("Received command: " + cmd.GetType());
-                }
-                catch (SocketException se)
-                {
-                    if (se.ErrorCode.Equals(10054))
-                        break;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Connection with Data Server closed");
-                    break;
-                }
-            }
-
-            if (socket.Connected)
-            {
-                socket.Shutdown(SocketShutdown.Both);
-                socket.Close();
-            }
-            Console.WriteLine("Server handler receiver thread has ended");
-        }
-
+        // add... methods - used by scheduler to pass Command and wake up DSH
         public bool addDownload(CommandDownload _cmd, int fragment)
         {
             lock (cmdLock)
@@ -303,16 +268,17 @@ namespace FAPS
         
         private void startDownload()
         {
+            // Send Download command to server
             CommandDownload dwn = (CommandDownload)cmd;
             Console.WriteLine("DSH" + serverID + " Rozpoczeto download chunka " + dwnfrag + " od " + dwn.Begin +" do " + dwn.End);
             cmdTrans.sendCmd(cmd);
-            //state = States.dwnwait;
             Command recvd = cmdTrans.getCmd();
             if (recvd.GetType().Equals(typeof(CommandChunk)))
             {
-                // Pass the chunk
+                // Pass the chunk to client
                 Console.WriteLine("DSH" + serverID + " Pobralem chunk " + dwnfrag + " o rozmiarze " + ((CommandChunk) recvd).Data.Length);
                 monitor.addDownloadChunk((CommandChunk) recvd, dwnfrag);
+                // Let scheduler know we succeeded
                 scheduler.success(dwnfrag);
                 scheduler.wakeSch();
             }
@@ -327,56 +293,42 @@ namespace FAPS
         private void startUpload()
         {
             Console.WriteLine("DSH"+serverID+" Rozpoczeto upload");
+
+            // Send Upload command to server, wait for Accept
             cmdTrans.sendCmd(cmd);
             CommandUpload upl = (CommandUpload)cmd;
-            //int fragments = (int)(upl.Size + scheduler.FragSize - 1 / scheduler.FragSize); // How many chunks to send. Round up.
             long sentSize = 0;
             CommandChunk chunk;
-            //state = States.uplwait;
             Command recvd = cmdTrans.getCmd();
             if (recvd.GetType().Equals(typeof(CommandAccept)))
             {
                 Console.WriteLine("DSH" + serverID + " Upload zaakceptowany");
                 scheduler.ConfirmAccept(serverID);
+
                 // Upload all the chunks
                 int frag = 0;
-                //for (int i = 0; i < fragments; i++)
                 while (sentSize < upl.Size)
                 {
-                    Console.WriteLine("DSH" + serverID + ": Zasysam nastepnego chunka.");
+                    // Wait for the next chunk from scheduler and send it
                     chunk = scheduler.takeUplChunk(frag, serverID); ;
-                    Console.WriteLine("DSH" + serverID + ": Wysylam chunk o rozmiarze: " + chunk.Data.Length + " Lacznie juz " +sentSize);
+                    Console.WriteLine("DSH" + serverID + ": Wysylam chunk " + frag + " Lacznie wyslano juz " +sentSize);
                     cmdTrans.sendCmd(chunk);
-                    Console.WriteLine("DSH" + serverID + ": Wyslano lacznie "+sentSize+" caly rozmiar "+upl.Size);
+                    // Let scheduler know we uploaded this chunk
                     scheduler.uplSucc(frag);
                     scheduler.wakeSch();
                     sentSize += chunk.Data.Length;
                     frag++;
                 }
                 Console.WriteLine("DSH" + serverID + ": Wyslano wszystkie chunki.");
+
+                // Send commit
                 recvd = cmdTrans.getCmd();
                 if (!recvd.GetType().Equals(typeof(CommandCommitRdy)))
                     Console.WriteLine("DSH: Unexpected server response after upload: " + recvd.GetType());
                 else
                 {
                     state = States.uplwait;
-                    Console.WriteLine("Czekam na commit...");
-                    CommandCommit commit = scheduler.waitForCommit();
-                    if (state == States.cancel)
-                    {
-                        rollback();
-                        return;
-                    }
-                    Console.WriteLine("Wysylam commit...");
-                    cmdTrans.sendCmd(commit);
-                    recvd = cmdTrans.getCmd();
-                    if (!recvd.GetType().Equals(typeof(CommandCommitAck)))
-                        Console.WriteLine("DSH: Unexpected server response after upload commit: " + recvd.GetType());
-                    else
-                    {
-                        scheduler.ConfirmCommit();
-                        state = States.idle;
-                    }
+                    commit();
                 }
             }
             else
@@ -389,43 +341,35 @@ namespace FAPS
         {
             cmdTrans.sendCmd(cmd);
 
+            // Delete or Rename
             if (cmd.GetType().Equals(typeof(CommandDelete)) ||
                 cmd.GetType().Equals(typeof(CommandRename)))
             {
                 Console.WriteLine("Wysylam delete/rename...");
+
+                // Wait for Accept from server
                 Command recvd = cmdTrans.getCmd();
                 if (recvd.GetType().Equals(typeof(CommandAccept)))
                 {
+                    // Wait for CommitRdy from server
                     recvd = cmdTrans.getCmd();
                     if (recvd.GetType().Equals(typeof(CommandCommitRdy)))
                     {
                         state = States.cmdwait;
-                        CommandCommit commit = scheduler.waitForCommit();
-                        if (state == States.cancel)
-                        {
-                            rollback();
-                            return;
-                        }
-                        cmdTrans.sendCmd(commit);
-                        Console.WriteLine("Wysylam commit...");
-                        recvd = cmdTrans.getCmd();
-                        if (!recvd.GetType().Equals(typeof(CommandCommitAck)))
-                            Console.WriteLine("DSH: Unexpected server response after cmd commit: " + recvd.GetType());
-                        else
-                        {
-                            Console.WriteLine("Potwierdzono commit.");
-                            scheduler.ConfirmCommit();
-                            state = States.idle;
-                        }
+                        commit();
                     }
                 }
                 else
                     Console.WriteLine("DSH: Unexpected server response after cmd: " + recvd.GetType());
                 return;
             }
+
+            // List
             if (cmd.GetType().Equals(typeof(CommandList)))
             {
                 Console.WriteLine("Wysylam list do serwera...");
+
+                // Server sends back file list in a chunk
                 Command recvd = cmdTrans.getCmd();
                 Console.WriteLine("Dostalem odpowiedz na List");
                 if (recvd.GetType().Equals(typeof(CommandChunk)))
@@ -437,6 +381,8 @@ namespace FAPS
                     Console.WriteLine("DSH: Unexpected server response after cmd: " + recvd.GetType());
                 return;
             }
+
+            // Error
             if (cmd.GetType().Equals(typeof(CommandError)))
             {
                 Console.WriteLine("SH: ERROR: " + ((CommandError)cmd).ErrorCode);
@@ -456,23 +402,47 @@ namespace FAPS
             cmdTrans.sendCmd(error);
         }
 
+        private void commit()
+        {
+            // Let scheduler know you're ready for commit, wait for signal
+            CommandCommit commit = scheduler.waitForCommit();
+            if (state == States.cancel)
+            {
+                rollback();
+                return;
+            }
+            cmdTrans.sendCmd(commit);
+            Console.WriteLine("Wysylam commit...");
+            Command recvd = cmdTrans.getCmd();
+            if (!recvd.GetType().Equals(typeof(CommandCommitAck)))
+                if (state == States.cmdwait)
+                    Console.WriteLine("DSH: Unexpected server response after cmd commit: " + recvd.GetType());
+                else if (state == States.uplwait)
+                    Console.WriteLine("DSH: Unexpected server response after upload commit: " + recvd.GetType());
+            else
+            {
+                Console.WriteLine("Potwierdzono commit.");
+                scheduler.ConfirmCommit();
+                state = States.idle;
+            }
+        }
+
         public void cancel()
         {
+            // Something went wrong, cancel operations
             state = States.cancel;
         }
 
         private void waitForSch()
         {
+            // Wait for signal from scheduler
             lock (cmdLock)
             {
                 while (state == States.idle)
                 {
                     Monitor.Wait(cmdLock);
-                    Console.WriteLine("DSH Zla proba budzenia");
                 }
-                Console.WriteLine("DSH working");
                 Console.WriteLine(state);
-                //cmd = null;
             }
         }
     }
